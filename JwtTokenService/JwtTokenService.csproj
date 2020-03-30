@@ -13,7 +13,7 @@
     <PackageIcon>NgLogo.png</PackageIcon>
     <RepositoryUrl>https://github.com/DannyBoyNg/JwtTokenService.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>jwt token tokens refresh</PackageTags>
+    <PackageTags>jwt access refresh token tokens HS256 HS384 HS512 RS256 RS384 RS512 ES256 ES384 ES512 RSA ECDsa</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
