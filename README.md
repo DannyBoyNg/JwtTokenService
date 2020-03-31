@@ -1,12 +1,12 @@
 # JwtTokenService
 
-A service to help manage JWT access tokens and refresh tokens in C#. Supports: HS256, HS384, HS512, RS256, RS384, RS512, ES256, ES384, ES512.
+A service to help manage JWT access tokens and refresh tokens in C#. Supports: HS256, HS384, HS512, RS256, RS384, RS512, ES256, ES384, ES512.  
 This service is a simple wrapper for Microsoft.IdentityModel.Tokens.Jwt. Please use Bouncy Castle or other third party libraries if you need a more feature rich library. For example, Microsoft.IdentityModel.Tokens.Jwt does not have support for PEM encoded files. Bouncy Castle does have support for PEM encoded files.
 
 ## Dependancies
 
-Microsoft.IdentityModel.Tokens.Jwt
-Microsoft.Extensions.Options
+Microsoft.IdentityModel.Tokens.Jwt  
+Microsoft.Extensions.Options  
 
 ## Installing
 
@@ -126,7 +126,7 @@ public class RefreshToken : IRefreshToken
 }
 ```
 
-Use different Signing algorithms
+Use different Signing algorithms  
 Symmetric Key (HS256, HS384, HS512)
 ```csharp
 //JWT TokenValidationParameters
@@ -196,7 +196,7 @@ var settings = new JwtTokenSettings
     TokenValidationParameters = tokenValidationParameters,
 };
 ```
-Notes: It is recommended to store your asymmetric keys to a file and load them when your app starts. The main reason for this is that when you restart your web app, all the tokens that you have already issued will no longer work if you generate a new asymmetric key at startup. (You don't have to use a file, you could any secure key provider)
+Notes: It is recommended to store your asymmetric keys to a file and load them when your app starts. The main reason for this is that when you restart your web app, all the tokens that you have already issued will no longer work if you generate a new asymmetric key at startup. (You don't have to use a file, you could any secure key provider)  
 
 Use a console app to create a new private key and Copy the file over to your ASP.NET Core app root
 ```csharp
@@ -219,7 +219,7 @@ var tokenValidationParameters = new TokenValidationParameters
 };
 ```
 
-ASP.NET Core
+ASP.NET Core  
 
 Register service with dependency injection in Startup.cs
 ```csharp
@@ -377,7 +377,7 @@ public class AdminController : ControllerBase
 ```
 
 Add some settings to appsettings.json configuration file
-```json
+```javascript
 {
   "Logging": {
     "LogLevel": {
