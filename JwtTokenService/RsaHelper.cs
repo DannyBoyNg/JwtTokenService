@@ -4,8 +4,17 @@ using System.Security.Cryptography;
 
 namespace DannyBoyNg.Services
 {
+    /// <summary>
+    /// A Helper for RSA security keys
+    /// </summary>
     public static class RsaHelper
     {
+        /// <summary>
+        /// Creates the RSA security key.
+        /// </summary>
+        /// <param name="keySize">Size of the key in bits.</param>
+        /// <param name="cngKeyCreationParameters">The optional CNG key creation parameters. If not provided, defaults will be used.</param>
+        /// <returns>RsaSecurityKey</returns>
         public static RsaSecurityKey CreateRSASecurityKey(int keySize = 2048, CngKeyCreationParameters? cngKeyCreationParameters = null)
         {
             if (cngKeyCreationParameters == null) cngKeyCreationParameters = new CngKeyCreationParameters
@@ -20,6 +29,14 @@ namespace DannyBoyNg.Services
             return new RsaSecurityKey(rsaCng);
         }
 
+        /// <summary>
+        /// RSASecurityKey to private key string.
+        /// </summary>
+        /// <param name="rsaSecurityKey">The RSA security key.</param>
+        /// <param name="format">The private key format.</param>
+        /// <param name="passwordBytes">The password bytes. Only used for Encrypted PKCS8 format. It will encrypt the PKCS8 private key with a user defined password.</param>
+        /// <param name="pbeParameters">The pbe parameters. Only used for Encrypted PKCS8 format.</param>
+        /// <returns>A base64 encoded private key</returns>
         public static string RsaSecurityKeyToPrivateKeyString(RsaSecurityKey rsaSecurityKey, PrivateKeyFormat format = PrivateKeyFormat.PKCS8, byte[]? passwordBytes = null, PbeParameters? pbeParameters = null)
         {
             var rsaCng = (rsaSecurityKey?.Rsa as RSACng) ?? throw new NullReferenceException();
@@ -33,6 +50,12 @@ namespace DannyBoyNg.Services
             return Convert.ToBase64String(bytes);
         }
 
+        /// <summary>
+        /// RSASecurityKey to public key string.
+        /// </summary>
+        /// <param name="rsaSecurityKey">The RSA security key.</param>
+        /// <param name="format">The format.</param>
+        /// <returns>A base64 encoded public key</returns>
         public static string RsaSecurityKeyToPublicKeyString(RsaSecurityKey rsaSecurityKey, PublicKeyFormat format = PublicKeyFormat.X509)
         {
             var rsaCng = (rsaSecurityKey?.Rsa as RSACng) ?? throw new NullReferenceException();
@@ -45,6 +68,13 @@ namespace DannyBoyNg.Services
             return Convert.ToBase64String(bytes);
         }
 
+        /// <summary>
+        /// Private key string to RsaSecurityKey.
+        /// </summary>
+        /// <param name="privateKeyString">The private key string.</param>
+        /// <param name="format">The private key format.</param>
+        /// <param name="passwordBytes">The password bytes. Only needed for encrypted PKCS8 format.</param>
+        /// <returns>RsaSecurityKey</returns>
         public static RsaSecurityKey PrivateKeyStringToRsaSecurityKey(string privateKeyString, PrivateKeyFormat format = PrivateKeyFormat.PKCS8, byte[]? passwordBytes = null)
         {
             var rsaCng = new RSACng();
@@ -67,6 +97,12 @@ namespace DannyBoyNg.Services
             return new RsaSecurityKey(rsaCng);
         }
 
+        /// <summary>
+        /// Public key string to RsaSecurityKey.
+        /// </summary>
+        /// <param name="publicKeyString">The public key string.</param>
+        /// <param name="format">The public key format.</param>
+        /// <returns>RsaSecurityKey</returns>
         public static RsaSecurityKey PublicKeyStringToRsaSecurityKey(string publicKeyString, PublicKeyFormat format = PublicKeyFormat.X509)
         {
             var rsaCng = new RSACng();

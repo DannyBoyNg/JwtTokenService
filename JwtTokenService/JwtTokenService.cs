@@ -9,13 +9,32 @@ using System.Security.Claims;
 
 namespace DannyBoyNg.Services
 {
+    /// <summary>
+    /// The JWT Token Service
+    /// </summary>
+    /// <seealso cref="DannyBoyNg.Services.IJwtTokenService" />
     public class JwtTokenService : IJwtTokenService
     {
+        /// <summary>
+        /// Gets the settings.
+        /// </summary>
         public JwtTokenSettings Settings { get; }
+        /// <summary>
+        /// Gets the refresh token repo if set.
+        /// </summary>
         public IRefreshTokenRepository? RefreshTokenRepo { get; } = null;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JwtTokenService"/> class.
+        /// </summary>
+        /// <param name="settings">The JWT token settings.</param>
         public JwtTokenService(JwtTokenSettings settings) => Settings = settings ?? new JwtTokenSettings();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JwtTokenService"/> class.
+        /// </summary>
+        /// <param name="settings">The settings.</param>
+        /// <param name="refreshTokenRepo">The refresh token repo.</param>
         public JwtTokenService(
             IOptions<JwtTokenSettings> settings,
             IRefreshTokenRepository? refreshTokenRepo = null)
@@ -24,6 +43,11 @@ namespace DannyBoyNg.Services
             RefreshTokenRepo = refreshTokenRepo;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JwtTokenService"/> class.
+        /// </summary>
+        /// <param name="settings">The JWT token settings.</param>
+        /// <param name="refreshTokenRepo">The refresh token repo.</param>
         public JwtTokenService(
             JwtTokenSettings settings,
             IRefreshTokenRepository? refreshTokenRepo = null)
@@ -32,6 +56,17 @@ namespace DannyBoyNg.Services
             RefreshTokenRepo = refreshTokenRepo;
         }
 
+        /// <summary>
+        /// Generates an access token.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="roles">The roles associated with the user. If user has no roles, just set to null</param>
+        /// <param name="userDefinedClaims">The user defined claims. All cliams you wish to out in the access token</param>
+        /// <returns>
+        /// An access token
+        /// </returns>
+        /// <exception cref="DannyBoyNg.Services.EncryptionKeyNotSetException"></exception>
+        /// <exception cref="DannyBoyNg.Services.EncryptionKeyIsTooShortException"></exception>
         public string GenerateAccessToken(string username, IEnumerable<string>? roles = null, IEnumerable<Claim>? userDefinedClaims = null)
         {
             try
@@ -64,6 +99,14 @@ namespace DannyBoyNg.Services
             catch (ArgumentOutOfRangeException) { throw new EncryptionKeyIsTooShortException(); }
         }
 
+        /// <summary>
+        /// Generates an access token from an old access token.
+        /// </summary>
+        /// <param name="oldAccessToken">The old access token.</param>
+        /// <returns>
+        /// A new access token
+        /// </returns>
+        /// <exception cref="NullReferenceException">Thrown when it cannot retrieve username from access token.</exception>
         public string GenerateAccessTokenFromOldAccessToken(string oldAccessToken)
         {
             var claimsPrincipal = GetPrincipalFromExpiredAccessToken(oldAccessToken);
@@ -73,6 +116,15 @@ namespace DannyBoyNg.Services
             return GenerateAccessToken(userNameFromToken, roles, userDefinedClaims);
         }
 
+        /// <summary>
+        /// Validate the access token and get the claims principal from an expired access token. This method will not check the expiration time on the token.
+        /// </summary>
+        /// <param name="accessToken">The access token.</param>
+        /// <returns>
+        /// The claims principal contained in the access token
+        /// </returns>
+        /// <exception cref="DannyBoyNg.Services.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
+        /// <exception cref="DannyBoyNg.Services.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
         public ClaimsPrincipal GetPrincipalFromExpiredAccessToken(string accessToken)
         {
             var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
@@ -80,6 +132,15 @@ namespace DannyBoyNg.Services
             return ValidateAccessToken(accessToken, tokenValidationParameters);
         }
 
+        /// <summary>
+        /// Validate the access token and get the claims principal from access token.
+        /// </summary>
+        /// <param name="accessToken">The access token.</param>
+        /// <returns>
+        /// The claims principal contained in the access token.
+        /// </returns>
+        /// <exception cref="DannyBoyNg.Services.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
+        /// <exception cref="DannyBoyNg.Services.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
         public ClaimsPrincipal GetPrincipalFromAccessToken(string accessToken)
         {
             var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
@@ -97,6 +158,11 @@ namespace DannyBoyNg.Services
             return claimsPrincipal;
         }
 
+        /// <summary>
+        /// Gets all the claims that are contained in the access token.
+        /// </summary>
+        /// <param name="claimsPrincipal">The claims principal.</param>
+        /// <returns></returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "In favor of a more consistent api over performance")]
         public List<Claim> GetAllClaims(ClaimsPrincipal claimsPrincipal)
         {
@@ -104,6 +170,13 @@ namespace DannyBoyNg.Services
             return claimsPrincipal.Claims.ToList();
         }
 
+        /// <summary>
+        /// Gets the user defined claims.
+        /// </summary>
+        /// <param name="claimsPrincipal">The claims principal.</param>
+        /// <returns>
+        /// It will only return the claims, the user has put into the access token. It will not return roles or username claims.
+        /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "In favor of a more consistent api over performance")]
         public List<Claim> GetUserDefinedClaims(ClaimsPrincipal claimsPrincipal)
         {
@@ -111,22 +184,48 @@ namespace DannyBoyNg.Services
             return claimsPrincipal.Claims.Where(UserDefinedClaimsFilter).ToList();
         }
 
+        /// <summary>
+        /// Gets a specific claim from the access token.
+        /// </summary>
+        /// <param name="claimsPrincipal">The claims principal.</param>
+        /// <param name="claimType">The specific type of claim.</param>
+        /// <returns>
+        /// The value of the claim
+        /// </returns>
         public string? GetClaim(ClaimsPrincipal claimsPrincipal, string claimType)
         {
             return claimsPrincipal?.Claims?.FirstOrDefault(x => x.Type == claimType)?.Value;
         }
 
+        /// <summary>
+        /// Gets the username.
+        /// </summary>
+        /// <param name="claimsPrincipal">The claims principal.</param>
+        /// <returns></returns>
         public string? GetUserName(ClaimsPrincipal claimsPrincipal)
         {
             return GetClaim(claimsPrincipal, ClaimTypes.Name);
         }
 
+        /// <summary>
+        /// Gets the authorization roles containes in the access token.
+        /// </summary>
+        /// <param name="claimsPrincipal">The claims principal.</param>
+        /// <returns>
+        /// A list of roles associated with the user.
+        /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "In favor of a more consistent api over performance")]
         public string[]? GetRoles(ClaimsPrincipal claimsPrincipal)
         {
             return claimsPrincipal?.Claims?.Where(x => x.Type == ClaimTypes.Role).Select(x => x.Value).ToArray();
         }
 
+        /// <summary>
+        /// Generates a refresh token.
+        /// </summary>
+        /// <returns>
+        /// Refresh token
+        /// </returns>
         public string GenerateRefreshToken()
         {
             byte[] time = BitConverter.GetBytes(DateTime.UtcNow.ToBinary());
@@ -134,6 +233,13 @@ namespace DannyBoyNg.Services
             return Convert.ToBase64String(time.Concat(key).ToArray()).Replace('/', '_').Replace('+', '-');
         }
 
+        /// <summary>
+        /// Stores the refresh token with the provided repository that implements IRefreshTokenRepository.
+        /// </summary>
+        /// <param name="userId">The user identifier.</param>
+        /// <param name="refreshToken">The refresh token.</param>
+        /// <exception cref="DannyBoyNg.Services.NoRefreshTokenRepositorySetException">Thrown when the refresh token repository is not provided.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when the refresh token is null.</exception>
         public void StoreRefreshToken(int userId, string refreshToken)
         {
             if (RefreshTokenRepo == null) throw new NoRefreshTokenRepositorySetException();
@@ -141,6 +247,14 @@ namespace DannyBoyNg.Services
             RefreshTokenRepo.Insert(userId, refreshToken);
         }
 
+        /// <summary>
+        /// Validates the refresh token. This method will also need a repository that implements IRefreshTokenRepository.
+        /// </summary>
+        /// <param name="userId">The user identifier.</param>
+        /// <param name="refreshToken">The refresh token.</param>
+        /// <exception cref="DannyBoyNg.Services.NoRefreshTokenRepositorySetException">Thrown when the refresh token repository is not provided.</exception>
+        /// <exception cref="DannyBoyNg.Services.SessionExpiredException">Thrown when the refresh token is expired.</exception>
+        /// <exception cref="DannyBoyNg.Services.InvalidRefreshTokenException">Thrown when the refresh token cannot be found in the data store.</exception>
         public void ValidateRefreshToken(int userId, string refreshToken)
         {
             if (RefreshTokenRepo == null) throw new NoRefreshTokenRepositorySetException();
