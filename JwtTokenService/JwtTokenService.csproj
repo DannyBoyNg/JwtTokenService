@@ -10,12 +10,12 @@
     <Description>A service to help manage JWT access tokens and refresh tokens in C#. Supports: HS256, HS384, HS512, RS256, RS384, RS512, ES256, ES384, ES512</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/DannyBoyNg/JwtTokenService</PackageProjectUrl>
-    <PackageIcon>NgLogo.png</PackageIcon>
+    <PackageIcon>logo.png</PackageIcon>
     <RepositoryUrl>https://github.com/DannyBoyNg/JwtTokenService.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>jwt access refresh token tokens HS256 HS384 HS512 RS256 RS384 RS512 ES256 ES384 ES512 RSA ECDsa</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="NgLogo.png">
+    <None Include="logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
