@@ -4,7 +4,7 @@ using System;
 namespace DannyBoyNg.Services
 {
     /// <summary>
-    /// Contains static methods to help with Dependancy Injection
+    /// Contains static methods to help with Dependency Injection
     /// </summary>
     public static class ServiceCollectionExtensions
     {
