@@ -7,12 +7,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 
-namespace DannyBoyNg.Services
+namespace Ng.Services
 {
     /// <summary>
     /// The JWT Token Service
     /// </summary>
-    /// <seealso cref="DannyBoyNg.Services.IJwtTokenService" />
+    /// <seealso cref="Ng.Services.IJwtTokenService" />
     public class JwtTokenService : IJwtTokenService
     {
         /// <summary>
@@ -65,8 +65,8 @@ namespace DannyBoyNg.Services
         /// <returns>
         /// An access token
         /// </returns>
-        /// <exception cref="DannyBoyNg.Services.EncryptionKeyNotSetException"></exception>
-        /// <exception cref="DannyBoyNg.Services.EncryptionKeyIsTooShortException"></exception>
+        /// <exception cref="Ng.Services.EncryptionKeyNotSetException"></exception>
+        /// <exception cref="Ng.Services.EncryptionKeyIsTooShortException"></exception>
         public string GenerateAccessToken(string username, IEnumerable<string>? roles = null, IEnumerable<Claim>? userDefinedClaims = null)
         {
             try
@@ -123,8 +123,8 @@ namespace DannyBoyNg.Services
         /// <returns>
         /// The claims principal contained in the access token
         /// </returns>
-        /// <exception cref="DannyBoyNg.Services.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
-        /// <exception cref="DannyBoyNg.Services.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
+        /// <exception cref="Ng.Services.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
+        /// <exception cref="Ng.Services.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
         public ClaimsPrincipal GetPrincipalFromExpiredAccessToken(string accessToken)
         {
             var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
@@ -139,8 +139,8 @@ namespace DannyBoyNg.Services
         /// <returns>
         /// The claims principal contained in the access token.
         /// </returns>
-        /// <exception cref="DannyBoyNg.Services.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
-        /// <exception cref="DannyBoyNg.Services.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
+        /// <exception cref="Ng.Services.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
+        /// <exception cref="Ng.Services.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
         public ClaimsPrincipal GetPrincipalFromAccessToken(string accessToken)
         {
             var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
@@ -238,7 +238,7 @@ namespace DannyBoyNg.Services
         /// </summary>
         /// <param name="userId">The user identifier.</param>
         /// <param name="refreshToken">The refresh token.</param>
-        /// <exception cref="DannyBoyNg.Services.NoRefreshTokenRepositorySetException">Thrown when the refresh token repository is not provided.</exception>
+        /// <exception cref="Ng.Services.NoRefreshTokenRepositorySetException">Thrown when the refresh token repository is not provided.</exception>
         /// <exception cref="ArgumentNullException">Thrown when the refresh token is null.</exception>
         public void StoreRefreshToken(int userId, string refreshToken)
         {
@@ -252,9 +252,9 @@ namespace DannyBoyNg.Services
         /// </summary>
         /// <param name="userId">The user identifier.</param>
         /// <param name="refreshToken">The refresh token.</param>
-        /// <exception cref="DannyBoyNg.Services.NoRefreshTokenRepositorySetException">Thrown when the refresh token repository is not provided.</exception>
-        /// <exception cref="DannyBoyNg.Services.SessionExpiredException">Thrown when the refresh token is expired.</exception>
-        /// <exception cref="DannyBoyNg.Services.InvalidRefreshTokenException">Thrown when the refresh token cannot be found in the data store.</exception>
+        /// <exception cref="Ng.Services.NoRefreshTokenRepositorySetException">Thrown when the refresh token repository is not provided.</exception>
+        /// <exception cref="Ng.Services.SessionExpiredException">Thrown when the refresh token is expired.</exception>
+        /// <exception cref="Ng.Services.InvalidRefreshTokenException">Thrown when the refresh token cannot be found in the data store.</exception>
         public void ValidateRefreshToken(int userId, string refreshToken)
         {
             if (RefreshTokenRepo == null) throw new NoRefreshTokenRepositorySetException();

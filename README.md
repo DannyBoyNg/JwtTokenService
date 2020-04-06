@@ -12,7 +12,7 @@ Microsoft.Extensions.Options
 
 Install from Nuget
 ```
-Install-Package DannyBoyNg.JwtTokenService
+Install-Package Ng.JwtTokenService
 ```
 
 ## Usage
@@ -20,7 +20,7 @@ Install-Package DannyBoyNg.JwtTokenService
 Console application
 
 ```csharp
-using DannyBoyNg.Services;
+using Ng.Services;
 ...
 //Example implementation of an inMemory repository for refresh tokens. In production, you would use a database store and not an inMemory store.
 IRefreshTokenRepository inMemoryRepository = new MyInMemoryRefreshTokenRepository(); //Never use this in production
@@ -223,7 +223,7 @@ ASP.NET Core
 
 Register service with dependency injection in Startup.cs
 ```csharp
-using DannyBoyNg.Services;
+using Ng.Services;
 ...
 public void ConfigureServices(IServiceCollection services)
 {
@@ -284,7 +284,7 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 
 Create an Auth controller with Login/Refresh endpoints
 ```csharp
-using DannyBoyNg.Services;
+using Ng.Services;
 ...
 [Route("api/[controller]/[action]")]
 public class AuthController : ControllerBase
@@ -342,7 +342,7 @@ public class AuthController : ControllerBase
 
 Protect an controller or action
 ```csharp
-using DannyBoyNg.Services;
+using Ng.Services;
 ...
 [Authorize]
 [Route("members")]

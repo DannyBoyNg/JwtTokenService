@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace DannyBoyNg.Services
+namespace Ng.Services
 {
     /// <summary>
     /// Default interface for refresh token repository

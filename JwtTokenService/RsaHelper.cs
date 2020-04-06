@@ -2,7 +2,7 @@
 using System;
 using System.Security.Cryptography;
 
-namespace DannyBoyNg.Services
+namespace Ng.Services
 {
     /// <summary>
     /// A Helper for RSA security keys

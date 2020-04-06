@@ -1,4 +1,4 @@
-﻿namespace DannyBoyNg.Services
+﻿namespace Ng.Services
 {
     /// <summary>
     /// A default container for a JWT token

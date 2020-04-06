@@ -1,4 +1,4 @@
-﻿namespace DannyBoyNg.Services
+﻿namespace Ng.Services
 {
     /// <summary>
     /// Supported private key formats
