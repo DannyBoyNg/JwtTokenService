@@ -33,6 +33,7 @@ namespace Ng.Services
                 _ => CngAlgorithm.ECDsaP256,
             };
             using CngKey cngKey = CngKey.Create(algorithm, null, cngKeyCreationParameters);
+            if (ecdsaCng != null) ecdsaCng.Dispose();
             ecdsaCng = new ECDsaCng(cngKey);
             return new ECDsaSecurityKey(ecdsaCng);
         }

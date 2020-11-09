@@ -20,7 +20,12 @@ Install-Package Ng.JwtTokenService
 Console application
 
 ```csharp
+using Microsoft.IdentityModel.Tokens;
 using Ng.Services;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
 ...
 //Example implementation of an inMemory repository for refresh tokens. In production, you would use a database store and not an inMemory store.
 IRefreshTokenRepository inMemoryRepository = new MyInMemoryRefreshTokenRepository(); //Never use this in production
@@ -72,8 +77,8 @@ ClaimsPrincipal claimsPrincipal = jwtTokenService.GetClaimsFromAccessToken(acces
 string userNameFromToken = jwtTokenService.GetUserName(claimsPrincipal);
 string userIdFromToken = jwtTokenService.GetClaim(claimsPrincipal, "userId");
 string[] rolesFromToken = jwtTokenService.GetRoles(claimsPrincipal);
-List<Claim> allClaimsFromToken = jwtTokenService.GetAllClaims(claimsPrincipal);
-List<Claim> userDefinedClaimsFromToken = jwtTokenService.GetUserDefinedClaims(claimsPrincipal);
+List<Claim> allClaimsFromToken = jwtTokenService.GetAllClaims(claimsPrincipal).ToList();
+List<Claim> userDefinedClaimsFromToken = jwtTokenService.GetUserDefinedClaims(claimsPrincipal).ToList();
 
 //Get data from expired token. This will check if signature is valid on the token.
 ClaimsPrincipal claimsPrincipalExpired = jwtTokenService.GetClaimsFromExpiredAccessToken(accessToken); //Will throw exception if token is invalid
@@ -86,7 +91,7 @@ string refreshToken = jwtTokenService.GenerateRefreshToken();
 jwtTokenService.StoreRefreshToken(userId, refreshToken);
 jwtTokenService.ValidateRefreshToken(userId, refreshToken); //Will throw an exception if refresh token is not valid
 
-//Generate new Access token with an old Access token. It copies all the claims to the new token.
+//Generate new Access token with an old Access token. It copies all the user defined claims to the new token.
 var newAccessToken = jwtTokenService.GenerateAccessTokenFromOldAccessToken(accessToken);
 ```
 
@@ -153,7 +158,7 @@ var settings = new JwtTokenSettings
 RSA Key (RS256, RS384, RS512)
 ```csharp
 //JWT TokenValidationParameters
-var rsa = new RsaHelper(); //Dispose of this when you do not need the generated keys. It contains the key generation material.
+var rsa = new RsaHelper(); //Dispose of this when you do not need the generated keys. If you dispose of this, you cannot generate new access tokens or validate existing tokens anymore.
 var tokenValidationParameters = new TokenValidationParameters
 {
     ValidateIssuer = true,
@@ -177,7 +182,7 @@ var settings = new JwtTokenSettings
 ECDsa Key (ES256, ES384, ES512)
 ```csharp
 //JWT TokenValidationParameters
-var ECDsa = new ECDsaHelper(); //Dispose of this when you do not need the generated keys. It contains the key generation material.
+var ECDsa = new ECDsaHelper(); //Dispose of this when you do not need the generated keys. If you dispose of this, you cannot generate new access tokens or validate existing tokens anymore.
 var tokenValidationParameters = new TokenValidationParameters
 {
     ValidateIssuer = true,
@@ -209,6 +214,7 @@ File.WriteAllText("ECDsaKeyPriv.txt", keyString);
 ```
 Then convert the file to a ECDsaSecurityKey
 ```csharp
+var ECDsa = new ECDsaHelper(); //Dispose of this when you do not need the generated keys. If you dispose of this, you cannot generate new access tokens or validate existing tokens anymore.
 var tokenValidationParameters = new TokenValidationParameters
 {
     ValidateIssuer = true,
@@ -216,7 +222,7 @@ var tokenValidationParameters = new TokenValidationParameters
     ValidateAudience = true,
     ValidAudience = Configuration["JwtSettings:Audience"],
     ValidateIssuerSigningKey = true,
-    IssuerSigningKey = ECDsaHelper.PrivateKeyStringToECDsaSecurityKey(File.ReadAllText("ECDsaKeyPriv.txt")),
+    IssuerSigningKey = ECDsa.PrivateKeyStringToECDsaSecurityKey(File.ReadAllText("ECDsaKeyPriv.txt")),
     ValidateLifetime = true,
     SaveSigninToken = true,
 };

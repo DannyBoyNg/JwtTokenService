@@ -27,6 +27,7 @@ namespace Ng.Services
             };
             cngKeyCreationParameters.Parameters.Add(new CngProperty("Length", BitConverter.GetBytes(keySize), CngPropertyOptions.None)); //Define RSA keySize
             using var cngKey = CngKey.Create(CngAlgorithm.Rsa, null, cngKeyCreationParameters);
+            if (rsaCng != null) rsaCng.Dispose();
             rsaCng = new RSACng(cngKey);
             return new RsaSecurityKey(rsaCng);
         }
