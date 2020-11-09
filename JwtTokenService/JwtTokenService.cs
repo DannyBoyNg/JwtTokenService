@@ -22,7 +22,7 @@ namespace Ng.Services
         /// <summary>
         /// Gets the refresh token repo if set.
         /// </summary>
-        public IRefreshTokenRepository? RefreshTokenRepo { get; } = null;
+        public IRefreshTokenRepository? RefreshTokenRepo { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JwtTokenService"/> class.
@@ -106,11 +106,13 @@ namespace Ng.Services
         /// <returns>
         /// A new access token
         /// </returns>
-        /// <exception cref="NullReferenceException">Thrown when it cannot retrieve username from access token.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when oldAccessToken is null or an empty string.</exception>
+        /// <exception cref="InvalidAccessTokenException">Thrown when it cannot retrieve username from the old access token.</exception>
         public string GenerateAccessTokenFromOldAccessToken(string oldAccessToken)
         {
-            var claimsPrincipal = GetPrincipalFromExpiredAccessToken(oldAccessToken);
-            var userNameFromToken = GetUserName(claimsPrincipal) ?? throw new NullReferenceException();
+            if (string.IsNullOrWhiteSpace(oldAccessToken)) throw new ArgumentNullException(nameof(oldAccessToken));
+            var claimsPrincipal = GetClaimsFromExpiredAccessToken(oldAccessToken);
+            var userNameFromToken = GetUserName(claimsPrincipal) ?? throw new InvalidAccessTokenException();
             var roles = GetRoles(claimsPrincipal);
             var userDefinedClaims = GetUserDefinedClaims(claimsPrincipal);
             return GenerateAccessToken(userNameFromToken, roles, userDefinedClaims);
@@ -125,7 +127,7 @@ namespace Ng.Services
         /// </returns>
         /// <exception cref="Ng.Services.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
         /// <exception cref="Ng.Services.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
-        public ClaimsPrincipal GetPrincipalFromExpiredAccessToken(string accessToken)
+        public ClaimsPrincipal GetClaimsFromExpiredAccessToken(string accessToken)
         {
             var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
             tokenValidationParameters.ValidateLifetime = false;
@@ -141,7 +143,7 @@ namespace Ng.Services
         /// </returns>
         /// <exception cref="Ng.Services.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
         /// <exception cref="Ng.Services.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
-        public ClaimsPrincipal GetPrincipalFromAccessToken(string accessToken)
+        public ClaimsPrincipal GetClaimsFromAccessToken(string accessToken)
         {
             var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
             return ValidateAccessToken(accessToken, tokenValidationParameters);
@@ -151,7 +153,7 @@ namespace Ng.Services
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var claimsPrincipal = tokenHandler.ValidateToken(accessToken, tokenValidationParameters, out SecurityToken securityToken);
-            if (!(securityToken is JwtSecurityToken jwtSecurityToken) || !jwtSecurityToken.Header.Alg.Equals(Settings.SecurityAlgorithm.ToString(), StringComparison.InvariantCultureIgnoreCase))
+            if (!(securityToken is JwtSecurityToken jwtSecurityToken) || !jwtSecurityToken.Header.Alg.Equals(Settings.SecurityAlgorithm.ToString(), StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidAccessTokenException();
             }
@@ -164,7 +166,7 @@ namespace Ng.Services
         /// <param name="claimsPrincipal">The claims principal.</param>
         /// <returns></returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "In favor of a more consistent api over performance")]
-        public List<Claim> GetAllClaims(ClaimsPrincipal claimsPrincipal)
+        public IEnumerable<Claim> GetAllClaims(ClaimsPrincipal claimsPrincipal)
         {
             if (claimsPrincipal == null) return new List<Claim>();
             return claimsPrincipal.Claims.ToList();
@@ -178,7 +180,7 @@ namespace Ng.Services
         /// It will only return the claims, the user has put into the access token. It will not return roles or username claims.
         /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "In favor of a more consistent api over performance")]
-        public List<Claim> GetUserDefinedClaims(ClaimsPrincipal claimsPrincipal)
+        public IEnumerable<Claim> GetUserDefinedClaims(ClaimsPrincipal claimsPrincipal)
         {
             if (claimsPrincipal == null) return new List<Claim>();
             return claimsPrincipal.Claims.Where(UserDefinedClaimsFilter).ToList();

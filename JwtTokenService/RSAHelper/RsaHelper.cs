@@ -7,15 +7,17 @@ namespace Ng.Services
     /// <summary>
     /// A Helper for RSA security keys
     /// </summary>
-    public static class RsaHelper
+    public sealed class RsaHelper : IDisposable
     {
+        RSACng? rsaCng;
+
         /// <summary>
         /// Creates the RSA security key.
         /// </summary>
         /// <param name="keySize">Size of the key in bits.</param>
         /// <param name="cngKeyCreationParameters">The optional CNG key creation parameters. If not provided, defaults will be used.</param>
         /// <returns>RsaSecurityKey</returns>
-        public static RsaSecurityKey CreateRSASecurityKey(int keySize = 2048, CngKeyCreationParameters? cngKeyCreationParameters = null)
+        public RsaSecurityKey CreateRSASecurityKey(int keySize = 2048, CngKeyCreationParameters? cngKeyCreationParameters = null)
         {
             if (cngKeyCreationParameters == null) cngKeyCreationParameters = new CngKeyCreationParameters
             {
@@ -25,7 +27,7 @@ namespace Ng.Services
             };
             cngKeyCreationParameters.Parameters.Add(new CngProperty("Length", BitConverter.GetBytes(keySize), CngPropertyOptions.None)); //Define RSA keySize
             using var cngKey = CngKey.Create(CngAlgorithm.Rsa, null, cngKeyCreationParameters);
-            var rsaCng = new RSACng(cngKey);
+            rsaCng = new RSACng(cngKey);
             return new RsaSecurityKey(rsaCng);
         }
 
@@ -37,9 +39,9 @@ namespace Ng.Services
         /// <param name="passwordBytes">The password bytes. Only used for Encrypted PKCS8 format. It will encrypt the PKCS8 private key with a user defined password.</param>
         /// <param name="pbeParameters">The pbe parameters. Only used for Encrypted PKCS8 format.</param>
         /// <returns>A base64 encoded private key</returns>
-        public static string RsaSecurityKeyToPrivateKeyString(RsaSecurityKey rsaSecurityKey, PrivateKeyFormat format = PrivateKeyFormat.PKCS8, byte[]? passwordBytes = null, PbeParameters? pbeParameters = null)
+        public string RsaSecurityKeyToPrivateKeyString(RsaSecurityKey rsaSecurityKey, PrivateKeyFormat format = PrivateKeyFormat.PKCS8, byte[]? passwordBytes = null, PbeParameters? pbeParameters = null)
         {
-            var rsaCng = (rsaSecurityKey?.Rsa as RSACng) ?? throw new NullReferenceException();
+            rsaCng = (rsaSecurityKey?.Rsa as RSACng) ?? throw new ArgumentNullException(nameof(rsaSecurityKey));
             var bytes = format switch
             {
                 PrivateKeyFormat.PKCS1 => rsaCng.ExportRSAPrivateKey(),
@@ -56,9 +58,9 @@ namespace Ng.Services
         /// <param name="rsaSecurityKey">The RSA security key.</param>
         /// <param name="format">The format.</param>
         /// <returns>A base64 encoded public key</returns>
-        public static string RsaSecurityKeyToPublicKeyString(RsaSecurityKey rsaSecurityKey, PublicKeyFormat format = PublicKeyFormat.X509)
+        public string RsaSecurityKeyToPublicKeyString(RsaSecurityKey rsaSecurityKey, PublicKeyFormat format = PublicKeyFormat.X509)
         {
-            var rsaCng = (rsaSecurityKey?.Rsa as RSACng) ?? throw new NullReferenceException();
+            rsaCng = (rsaSecurityKey?.Rsa as RSACng) ?? throw new ArgumentNullException(nameof(rsaSecurityKey));
             var bytes = format switch
             {
                 PublicKeyFormat.PKCS1 => rsaCng.ExportRSAPublicKey(),
@@ -75,9 +77,9 @@ namespace Ng.Services
         /// <param name="format">The private key format.</param>
         /// <param name="passwordBytes">The password bytes. Only needed for encrypted PKCS8 format.</param>
         /// <returns>RsaSecurityKey</returns>
-        public static RsaSecurityKey PrivateKeyStringToRsaSecurityKey(string privateKeyString, PrivateKeyFormat format = PrivateKeyFormat.PKCS8, byte[]? passwordBytes = null)
+        public RsaSecurityKey PrivateKeyStringToRsaSecurityKey(string privateKeyString, PrivateKeyFormat format = PrivateKeyFormat.PKCS8, byte[]? passwordBytes = null)
         {
-            var rsaCng = new RSACng();
+            rsaCng = new RSACng();
             var bytes = Convert.FromBase64String(privateKeyString);
             switch (format)
             {
@@ -103,9 +105,9 @@ namespace Ng.Services
         /// <param name="publicKeyString">The public key string.</param>
         /// <param name="format">The public key format.</param>
         /// <returns>RsaSecurityKey</returns>
-        public static RsaSecurityKey PublicKeyStringToRsaSecurityKey(string publicKeyString, PublicKeyFormat format = PublicKeyFormat.X509)
+        public RsaSecurityKey PublicKeyStringToRsaSecurityKey(string publicKeyString, PublicKeyFormat format = PublicKeyFormat.X509)
         {
-            var rsaCng = new RSACng();
+            rsaCng = new RSACng();
             var bytes = Convert.FromBase64String(publicKeyString);
             switch (format)
             {
@@ -120,6 +122,14 @@ namespace Ng.Services
                     break;
             }
             return new RsaSecurityKey(rsaCng);
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            rsaCng?.Dispose();
         }
     }
 }

@@ -40,7 +40,7 @@ namespace Ng.Services
         /// Gets all the claims that are contained in the access token.
         /// </summary>
         /// <param name="claimsPrincipal">The claims principal.</param>
-        List<Claim> GetAllClaims(ClaimsPrincipal claimsPrincipal);
+        IEnumerable<Claim> GetAllClaims(ClaimsPrincipal claimsPrincipal);
         /// <summary>
         /// Gets a specific claim from the access token.
         /// </summary>
@@ -53,13 +53,13 @@ namespace Ng.Services
         /// </summary>
         /// <param name="accessToken">The access token.</param>
         /// <returns>The claims principal contained in the access token.</returns>
-        ClaimsPrincipal GetPrincipalFromAccessToken(string accessToken);
+        ClaimsPrincipal GetClaimsFromAccessToken(string accessToken);
         /// <summary>
         /// Validate the access token and get the claims principal from an expired access token. This method will not check the expiration time on the token.
         /// </summary>
         /// <param name="accessToken">The access token.</param>
         /// <returns>The claims principal contained in the access token</returns>
-        ClaimsPrincipal GetPrincipalFromExpiredAccessToken(string accessToken);
+        ClaimsPrincipal GetClaimsFromExpiredAccessToken(string accessToken);
         /// <summary>
         /// Gets the authorization roles containes in the access token.
         /// </summary>
@@ -71,7 +71,7 @@ namespace Ng.Services
         /// </summary>
         /// <param name="claimsPrincipal">The claims principal.</param>
         /// <returns>It will only return the claims, the user has put into the access token. It will not return roles or username claims.</returns>
-        List<Claim> GetUserDefinedClaims(ClaimsPrincipal claimsPrincipal);
+        IEnumerable<Claim> GetUserDefinedClaims(ClaimsPrincipal claimsPrincipal);
         /// <summary>
         /// Gets the username.
         /// </summary>

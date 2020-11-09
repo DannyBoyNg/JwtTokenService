@@ -7,15 +7,17 @@ namespace Ng.Services
     /// <summary>
     /// A Helper for ECDsa security keys
     /// </summary>
-    public static class ECDsaHelper
+    public sealed class ECDsaHelper : IDisposable
     {
+        ECDsa? ecdsaCng;
+
         /// <summary>
         /// Creates an Elliptic Curve DSA security key.
         /// </summary>
         /// <param name="curve">An optional Curve Type.</param>
         /// <param name="cngKeyCreationParameters">The CNG key creation parameters.</param>
         /// <returns>ECDsaSecurityKey</returns>
-        public static ECDsaSecurityKey CreateECDsaSecurityKey(ECDsaCurve curve = ECDsaCurve.P256, CngKeyCreationParameters? cngKeyCreationParameters = null)
+        public ECDsaSecurityKey CreateECDsaSecurityKey(ECDsaCurve curve = ECDsaCurve.P256, CngKeyCreationParameters? cngKeyCreationParameters = null)
         {
             if (cngKeyCreationParameters == null) cngKeyCreationParameters = new CngKeyCreationParameters
             {
@@ -31,7 +33,7 @@ namespace Ng.Services
                 _ => CngAlgorithm.ECDsaP256,
             };
             using CngKey cngKey = CngKey.Create(algorithm, null, cngKeyCreationParameters);
-            ECDsa ecdsaCng = new ECDsaCng(cngKey);
+            ecdsaCng = new ECDsaCng(cngKey);
             return new ECDsaSecurityKey(ecdsaCng);
         }
 
@@ -40,9 +42,9 @@ namespace Ng.Services
         /// </summary>
         /// <returns>string</returns>
         /// <exception cref="NullReferenceException">Thrown when ecdsaSecurityKey is null or ecdsaSecurityKey.ECDsa is null</exception>
-        public static string ECDsaSecurityKeyToPrivateKeyString(ECDsaSecurityKey ecdsaSecurityKey)
+        public string ECDsaSecurityKeyToPrivateKeyString(ECDsaSecurityKey ecdsaSecurityKey)
         {
-            var ecdsaCng = (ecdsaSecurityKey?.ECDsa as ECDsaCng) ?? throw new NullReferenceException();
+            ecdsaCng = (ecdsaSecurityKey?.ECDsa as ECDsaCng) ?? throw new ArgumentNullException(nameof(ecdsaSecurityKey));
             return Convert.ToBase64String(ecdsaCng.ExportPkcs8PrivateKey());
         }
 
@@ -52,9 +54,9 @@ namespace Ng.Services
         /// <param name="ecdsaSecurityKey">The ecdsa security key.</param>
         /// <returns></returns>
         /// <exception cref="NullReferenceException"></exception>
-        public static string ECDsaSecurityKeyToPublicKeyString(ECDsaSecurityKey ecdsaSecurityKey)
+        public string ECDsaSecurityKeyToPublicKeyString(ECDsaSecurityKey ecdsaSecurityKey)
         {
-            var ecdsaCng = (ecdsaSecurityKey?.ECDsa as ECDsaCng) ?? throw new NullReferenceException();
+            ecdsaCng = (ecdsaSecurityKey?.ECDsa as ECDsaCng) ?? throw new ArgumentNullException(nameof(ecdsaSecurityKey));
             return Convert.ToBase64String(ecdsaCng.ExportSubjectPublicKeyInfo());
         }
 
@@ -63,9 +65,9 @@ namespace Ng.Services
         /// </summary>
         /// <param name="privateKeyString">The private key string (base64 encoded).</param>
         /// <returns>ECDsaSecurityKey</returns>
-        public static ECDsaSecurityKey PrivateKeyStringToECDsaSecurityKey(string privateKeyString)
+        public ECDsaSecurityKey PrivateKeyStringToECDsaSecurityKey(string privateKeyString)
         {
-            var ecdsaCng = new ECDsaCng();
+            ecdsaCng = new ECDsaCng();
             ecdsaCng.ImportPkcs8PrivateKey(Convert.FromBase64String(privateKeyString), out _);
             return new ECDsaSecurityKey(ecdsaCng);
         }
@@ -75,11 +77,19 @@ namespace Ng.Services
         /// </summary>
         /// <param name="publicKeyString">The public key string (base64 encoded).</param>
         /// <returns>ECDsaSecurityKey</returns>
-        public static ECDsaSecurityKey PublicKeyStringToECDsaSecurityKey(string publicKeyString)
+        public ECDsaSecurityKey PublicKeyStringToECDsaSecurityKey(string publicKeyString)
         {
-            var ecdsaCng = new ECDsaCng();
+            ecdsaCng = new ECDsaCng();
             ecdsaCng.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKeyString), out _);
             return new ECDsaSecurityKey(ecdsaCng);
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            ecdsaCng?.Dispose();
         }
     }
 }

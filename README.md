@@ -33,7 +33,7 @@ var tokenValidationParameters = new TokenValidationParameters
     ValidateAudience = true,
     ValidAudience = "you",
     ValidateIssuerSigningKey = true,
-    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("MySuperDuperSecretSymmetricKey")),
+    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("MySuperDuperSecretSymmetricKey")), //Key cannot be too short or it won't work
     ValidateLifetime = true, //Set this to false for Access tokens never to expire
     SaveSigninToken = true,
 };
@@ -65,8 +65,8 @@ var jwtTokenService = new JwtTokenService(settings, inMemoryRepository);
 //Generate Access token
 string accessToken = jwtTokenService.GenerateAccessToken(userName, roles, claims);
 
-//Validate Access token
-ClaimsPrincipal claimsPrincipal = jwtTokenService.GetPrincipalFromAccessToken(accessToken); //Will throw exception if token is invalid or expired
+//Validate Access token and retrieve claims
+ClaimsPrincipal claimsPrincipal = jwtTokenService.GetClaimsFromAccessToken(accessToken); //Will throw exception if token is invalid or expired
 
 //Get data from token
 string userNameFromToken = jwtTokenService.GetUserName(claimsPrincipal);
@@ -75,18 +75,18 @@ string[] rolesFromToken = jwtTokenService.GetRoles(claimsPrincipal);
 List<Claim> allClaimsFromToken = jwtTokenService.GetAllClaims(claimsPrincipal);
 List<Claim> userDefinedClaimsFromToken = jwtTokenService.GetUserDefinedClaims(claimsPrincipal);
 
-//Get data from expired token
-ClaimsPrincipal claimsPrincipalExpired = jwtTokenService.GetPrincipalFromExpiredAccessToken(accessToken); //Will throw exception if token is invalid
+//Get data from expired token. This will check if signature is valid on the token.
+ClaimsPrincipal claimsPrincipalExpired = jwtTokenService.GetClaimsFromExpiredAccessToken(accessToken); //Will throw exception if token is invalid
 string userNameFromExpiredToken = jwtTokenService.GetUserName(claimsPrincipalExpired);
 
-//Generate Refresh token
+//Generate Refresh token. A refresh token is just a random string, you could generate this yourself also.
 string refreshToken = jwtTokenService.GenerateRefreshToken();
 
 //These methods will throw an exception if no refreshToken repository is provided
 jwtTokenService.StoreRefreshToken(userId, refreshToken);
 jwtTokenService.ValidateRefreshToken(userId, refreshToken); //Will throw an exception if refresh token is not valid
 
-//Generate new Access token with an old Access token
+//Generate new Access token with an old Access token. It copies all the claims to the new token.
 var newAccessToken = jwtTokenService.GenerateAccessTokenFromOldAccessToken(accessToken);
 ```
 
@@ -153,6 +153,7 @@ var settings = new JwtTokenSettings
 RSA Key (RS256, RS384, RS512)
 ```csharp
 //JWT TokenValidationParameters
+var rsa = new RsaHelper(); //Dispose of this when you do not need the generated keys. It contains the key generation material.
 var tokenValidationParameters = new TokenValidationParameters
 {
     ValidateIssuer = true,
@@ -160,7 +161,7 @@ var tokenValidationParameters = new TokenValidationParameters
     ValidateAudience = true,
     ValidAudience = "you",
     ValidateIssuerSigningKey = true,
-    IssuerSigningKey = RsaHelper.CreateRSASecurityKey(), // <-- RSA Key
+    IssuerSigningKey = rsa.CreateRSASecurityKey(), // <-- RSA Key
     ValidateLifetime = true,
     SaveSigninToken = true,
 };
@@ -176,6 +177,7 @@ var settings = new JwtTokenSettings
 ECDsa Key (ES256, ES384, ES512)
 ```csharp
 //JWT TokenValidationParameters
+var ECDsa = new ECDsaHelper(); //Dispose of this when you do not need the generated keys. It contains the key generation material.
 var tokenValidationParameters = new TokenValidationParameters
 {
     ValidateIssuer = true,
@@ -183,7 +185,7 @@ var tokenValidationParameters = new TokenValidationParameters
     ValidateAudience = true,
     ValidAudience = "you",
     ValidateIssuerSigningKey = true,
-    IssuerSigningKey = ECDsaHelper.CreateECDsaSecurityKey(ECDsaCurve.P256), // <-- ECDsa Key. Curve options: P256 (default), P384, P521
+    IssuerSigningKey = ECDsa.CreateECDsaSecurityKey(ECDsaCurve.P256), // <-- ECDsa Key. Curve options: P256 (default), P384, P521. Default is used if none is provided.
     ValidateLifetime = true,
     SaveSigninToken = true,
 };
@@ -200,8 +202,9 @@ Notes: It is recommended to store your asymmetric keys to a file and load them w
 
 Use a console app to create a new private key and Copy the file over to your ASP.NET Core app root
 ```csharp
-var myKeyECDsaKey = ECDsaHelper.CreateECDsaSecurityKey(ECDsaCurve.P521);
-var keyString = ECDsaHelper.ECDsaSecurityKeyToPrivateKeyString(myKeyECDsaKey);
+using var ECDsa = new ECDsaHelper();
+var myKeyECDsaKey = ECDsa.CreateECDsaSecurityKey(ECDsaCurve.P521);
+var keyString = ECDsa.ECDsaSecurityKeyToPrivateKeyString(myKeyECDsaKey);
 File.WriteAllText("ECDsaKeyPriv.txt", keyString);
 ```
 Then convert the file to a ECDsaSecurityKey
@@ -251,7 +254,7 @@ public void ConfigureServices(IServiceCollection services)
         })
         .AddJwtBearer(options => options.TokenValidationParameters = tokenValidationParameters);
     //Also make sure you provide your own implementation of a RefreshToken repository. You don't have to provide a IRefreshTokenRepository, if you don't plan on using refreshing tokens.
-    services.AddScoped<IRefreshTokenRepository, MyInMemoryRefreshTokenRepository>(); //Do not use in production
+    services.AddScoped<IRefreshTokenRepository, MyInMemoryRefreshTokenRepository>(); //Do not use (in-memory store) in production
 }
 ```
 
