@@ -5,7 +5,7 @@ namespace Ng.Services
     /// <summary>
     /// JWT token settings container
     /// </summary>
-    public class JwtTokenSettings
+    public record JwtTokenSettings
     {
         /// <summary>
         /// Gets or sets when the access token expires.

@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFrameworks>net5.0;netstandard2.1</TargetFrameworks>
+    <LangVersion>9.0</LangVersion>
     <RootNamespace>Ng.Services</RootNamespace>
     <PackageId>Ng.JwtTokenService</PackageId>
     <Authors>DannyBoyNg</Authors>
@@ -13,16 +14,16 @@
     <PackageIcon>logo.png</PackageIcon>
     <RepositoryUrl>https://github.com/DannyBoyNg/JwtTokenService.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>jwt access refresh token tokens HS256 HS384 HS512 RS256 RS384 RS512 ES256 ES384 ES512 RSA ECDsa</PackageTags>
+    <PackageTags>jwt access refresh token tokens HS256 HS384 HS512 RS256 RS384 RS512 ES256 ES384 ES512 RSA ECDsa accesstoken refreshtoken symmetric asymmetric claims</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.8.0" />
   </ItemGroup>

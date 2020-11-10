@@ -3,7 +3,7 @@
     /// <summary>
     /// A default container for a JWT token
     /// </summary>
-    public class JwtToken
+    public record JwtToken
     {
         /// <summary>
         /// Gets or sets the access token.

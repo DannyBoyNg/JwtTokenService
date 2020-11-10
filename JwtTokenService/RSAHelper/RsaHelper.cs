@@ -48,7 +48,7 @@ namespace Ng.Services
             {
                 PrivateKeyFormat.PKCS1 => rsaCng.ExportRSAPrivateKey(),
                 PrivateKeyFormat.PKCS8 => rsaCng.ExportPkcs8PrivateKey(),
-                PrivateKeyFormat.PKCS8Encrypted => rsaCng.ExportEncryptedPkcs8PrivateKey(passwordBytes, pbeParameters),
+                PrivateKeyFormat.PKCS8Encrypted => rsaCng.ExportEncryptedPkcs8PrivateKey(passwordBytes, pbeParameters ?? throw new ArgumentNullException(nameof(pbeParameters))),
                 _ => rsaCng.ExportPkcs8PrivateKey(),
             };
             return Convert.ToBase64String(bytes);

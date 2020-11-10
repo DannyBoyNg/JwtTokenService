@@ -153,7 +153,7 @@ namespace Ng.Services
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var claimsPrincipal = tokenHandler.ValidateToken(accessToken, tokenValidationParameters, out SecurityToken securityToken);
-            if (!(securityToken is JwtSecurityToken jwtSecurityToken) || !jwtSecurityToken.Header.Alg.Equals(Settings.SecurityAlgorithm.ToString(), StringComparison.OrdinalIgnoreCase))
+            if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(Settings.SecurityAlgorithm.ToString(), StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidAccessTokenException();
             }
@@ -165,7 +165,6 @@ namespace Ng.Services
         /// </summary>
         /// <param name="claimsPrincipal">The claims principal.</param>
         /// <returns></returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "In favor of a more consistent api over performance")]
         public IEnumerable<Claim> GetAllClaims(ClaimsPrincipal claimsPrincipal)
         {
             if (claimsPrincipal == null) return new List<Claim>();
@@ -179,7 +178,6 @@ namespace Ng.Services
         /// <returns>
         /// It will only return the claims, the user has put into the access token. It will not return roles or username claims.
         /// </returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "In favor of a more consistent api over performance")]
         public IEnumerable<Claim> GetUserDefinedClaims(ClaimsPrincipal claimsPrincipal)
         {
             if (claimsPrincipal == null) return new List<Claim>();
@@ -216,7 +214,6 @@ namespace Ng.Services
         /// <returns>
         /// A list of roles associated with the user.
         /// </returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "In favor of a more consistent api over performance")]
         public string[]? GetRoles(ClaimsPrincipal claimsPrincipal)
         {
             return claimsPrincipal?.Claims?.Where(x => x.Type == ClaimTypes.Role).Select(x => x.Value).ToArray();
