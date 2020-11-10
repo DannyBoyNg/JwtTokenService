@@ -1,5 +1,6 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 
 namespace Ng.Services
@@ -9,7 +10,7 @@ namespace Ng.Services
     /// </summary>
     public sealed class ECDsaHelper : IDisposable
     {
-        ECDsa? ecdsaCng;
+        private readonly HashSet<ECDsa> ecdsaCngList = new HashSet<ECDsa>();
 
         /// <summary>
         /// Creates an Elliptic Curve DSA security key.
@@ -33,8 +34,8 @@ namespace Ng.Services
                 _ => CngAlgorithm.ECDsaP256,
             };
             using CngKey cngKey = CngKey.Create(algorithm, null, cngKeyCreationParameters);
-            if (ecdsaCng != null) ecdsaCng.Dispose();
-            ecdsaCng = new ECDsaCng(cngKey);
+            var ecdsaCng = new ECDsaCng(cngKey);
+            ecdsaCngList.Add(ecdsaCng);
             return new ECDsaSecurityKey(ecdsaCng);
         }
 
@@ -42,10 +43,10 @@ namespace Ng.Services
         /// ECDsaSecurityKey to private key string (base64 encoded).
         /// </summary>
         /// <returns>string</returns>
-        /// <exception cref="NullReferenceException">Thrown when ecdsaSecurityKey is null or ecdsaSecurityKey.ECDsa is null</exception>
-        public string ECDsaSecurityKeyToPrivateKeyString(ECDsaSecurityKey ecdsaSecurityKey)
+        /// <exception cref="ArgumentNullException">Thrown when ecdsaSecurityKey is null or ecdsaSecurityKey.ECDsa is null</exception>
+        public static string ECDsaSecurityKeyToPrivateKeyString(ECDsaSecurityKey ecdsaSecurityKey)
         {
-            ecdsaCng = (ecdsaSecurityKey?.ECDsa as ECDsaCng) ?? throw new ArgumentNullException(nameof(ecdsaSecurityKey));
+            var ecdsaCng = (ecdsaSecurityKey?.ECDsa as ECDsaCng) ?? throw new ArgumentNullException(nameof(ecdsaSecurityKey));
             return Convert.ToBase64String(ecdsaCng.ExportPkcs8PrivateKey());
         }
 
@@ -54,10 +55,10 @@ namespace Ng.Services
         /// </summary>
         /// <param name="ecdsaSecurityKey">The ecdsa security key.</param>
         /// <returns></returns>
-        /// <exception cref="NullReferenceException"></exception>
-        public string ECDsaSecurityKeyToPublicKeyString(ECDsaSecurityKey ecdsaSecurityKey)
+        /// <exception cref="ArgumentNullException"></exception>
+        public static string ECDsaSecurityKeyToPublicKeyString(ECDsaSecurityKey ecdsaSecurityKey)
         {
-            ecdsaCng = (ecdsaSecurityKey?.ECDsa as ECDsaCng) ?? throw new ArgumentNullException(nameof(ecdsaSecurityKey));
+            var ecdsaCng = (ecdsaSecurityKey?.ECDsa as ECDsaCng) ?? throw new ArgumentNullException(nameof(ecdsaSecurityKey));
             return Convert.ToBase64String(ecdsaCng.ExportSubjectPublicKeyInfo());
         }
 
@@ -68,7 +69,8 @@ namespace Ng.Services
         /// <returns>ECDsaSecurityKey</returns>
         public ECDsaSecurityKey PrivateKeyStringToECDsaSecurityKey(string privateKeyString)
         {
-            ecdsaCng = new ECDsaCng();
+            var ecdsaCng = new ECDsaCng();
+            ecdsaCngList.Add(ecdsaCng);
             ecdsaCng.ImportPkcs8PrivateKey(Convert.FromBase64String(privateKeyString), out _);
             return new ECDsaSecurityKey(ecdsaCng);
         }
@@ -80,17 +82,22 @@ namespace Ng.Services
         /// <returns>ECDsaSecurityKey</returns>
         public ECDsaSecurityKey PublicKeyStringToECDsaSecurityKey(string publicKeyString)
         {
-            ecdsaCng = new ECDsaCng();
+            var ecdsaCng = new ECDsaCng();
+            ecdsaCngList.Add(ecdsaCng);
             ecdsaCng.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKeyString), out _);
             return new ECDsaSecurityKey(ecdsaCng);
         }
 
         /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// This will dispose of all key material that was used to generate keys. If key material is disposed, all generated keys will also not work anymore.
+        /// Only dispose if you don't need the generated keys anymore.
         /// </summary>
         public void Dispose()
         {
-            ecdsaCng?.Dispose();
+            foreach (var item in ecdsaCngList)
+            {
+                item.Dispose();
+            }
         }
     }
 }

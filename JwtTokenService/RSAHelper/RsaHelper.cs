@@ -1,5 +1,6 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 
 namespace Ng.Services
@@ -9,7 +10,7 @@ namespace Ng.Services
     /// </summary>
     public sealed class RsaHelper : IDisposable
     {
-        RSACng? rsaCng;
+        private readonly HashSet<RSACng> rsaCngList = new HashSet<RSACng>();
 
         /// <summary>
         /// Creates the RSA security key.
@@ -27,8 +28,8 @@ namespace Ng.Services
             };
             cngKeyCreationParameters.Parameters.Add(new CngProperty("Length", BitConverter.GetBytes(keySize), CngPropertyOptions.None)); //Define RSA keySize
             using var cngKey = CngKey.Create(CngAlgorithm.Rsa, null, cngKeyCreationParameters);
-            if (rsaCng != null) rsaCng.Dispose();
-            rsaCng = new RSACng(cngKey);
+            var rsaCng = new RSACng(cngKey);
+            rsaCngList.Add(rsaCng);
             return new RsaSecurityKey(rsaCng);
         }
 
@@ -40,9 +41,9 @@ namespace Ng.Services
         /// <param name="passwordBytes">The password bytes. Only used for Encrypted PKCS8 format. It will encrypt the PKCS8 private key with a user defined password.</param>
         /// <param name="pbeParameters">The pbe parameters. Only used for Encrypted PKCS8 format.</param>
         /// <returns>A base64 encoded private key</returns>
-        public string RsaSecurityKeyToPrivateKeyString(RsaSecurityKey rsaSecurityKey, PrivateKeyFormat format = PrivateKeyFormat.PKCS8, byte[]? passwordBytes = null, PbeParameters? pbeParameters = null)
+        public static string RsaSecurityKeyToPrivateKeyString(RsaSecurityKey rsaSecurityKey, PrivateKeyFormat format = PrivateKeyFormat.PKCS8, byte[]? passwordBytes = null, PbeParameters? pbeParameters = null)
         {
-            rsaCng = (rsaSecurityKey?.Rsa as RSACng) ?? throw new ArgumentNullException(nameof(rsaSecurityKey));
+            var rsaCng = (rsaSecurityKey?.Rsa as RSACng) ?? throw new ArgumentNullException(nameof(rsaSecurityKey));
             var bytes = format switch
             {
                 PrivateKeyFormat.PKCS1 => rsaCng.ExportRSAPrivateKey(),
@@ -59,9 +60,9 @@ namespace Ng.Services
         /// <param name="rsaSecurityKey">The RSA security key.</param>
         /// <param name="format">The format.</param>
         /// <returns>A base64 encoded public key</returns>
-        public string RsaSecurityKeyToPublicKeyString(RsaSecurityKey rsaSecurityKey, PublicKeyFormat format = PublicKeyFormat.X509)
+        public static string RsaSecurityKeyToPublicKeyString(RsaSecurityKey rsaSecurityKey, PublicKeyFormat format = PublicKeyFormat.X509)
         {
-            rsaCng = (rsaSecurityKey?.Rsa as RSACng) ?? throw new ArgumentNullException(nameof(rsaSecurityKey));
+            var rsaCng = (rsaSecurityKey?.Rsa as RSACng) ?? throw new ArgumentNullException(nameof(rsaSecurityKey));
             var bytes = format switch
             {
                 PublicKeyFormat.PKCS1 => rsaCng.ExportRSAPublicKey(),
@@ -80,7 +81,8 @@ namespace Ng.Services
         /// <returns>RsaSecurityKey</returns>
         public RsaSecurityKey PrivateKeyStringToRsaSecurityKey(string privateKeyString, PrivateKeyFormat format = PrivateKeyFormat.PKCS8, byte[]? passwordBytes = null)
         {
-            rsaCng = new RSACng();
+            var rsaCng = new RSACng();
+            rsaCngList.Add(rsaCng);
             var bytes = Convert.FromBase64String(privateKeyString);
             switch (format)
             {
@@ -108,7 +110,8 @@ namespace Ng.Services
         /// <returns>RsaSecurityKey</returns>
         public RsaSecurityKey PublicKeyStringToRsaSecurityKey(string publicKeyString, PublicKeyFormat format = PublicKeyFormat.X509)
         {
-            rsaCng = new RSACng();
+            var rsaCng = new RSACng();
+            rsaCngList.Add(rsaCng);
             var bytes = Convert.FromBase64String(publicKeyString);
             switch (format)
             {
@@ -126,11 +129,15 @@ namespace Ng.Services
         }
 
         /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// This will dispose of all key material that was used to generate keys. If key material is disposed, all generated keys will also not work anymore.
+        /// Only dispose if you don't need the generated keys anymore.
         /// </summary>
         public void Dispose()
         {
-            rsaCng?.Dispose();
+            foreach (var item in rsaCngList)
+            {
+                item.Dispose();
+            }
         }
     }
 }
