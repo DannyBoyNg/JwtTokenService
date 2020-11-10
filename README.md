@@ -1,11 +1,11 @@
 # JwtTokenService
 
 A service to help manage JWT access tokens and refresh tokens in C#. Supports: HS256, HS384, HS512, RS256, RS384, RS512, ES256, ES384, ES512.  
-This service is a simple wrapper for Microsoft.IdentityModel.Tokens.Jwt. Please use Bouncy Castle or other third party libraries if you need a more feature rich library. For example, Microsoft.IdentityModel.Tokens.Jwt does not have support for PEM encoded files. Bouncy Castle does have support for PEM encoded files.
+This service is a simple wrapper for System.IdentityModel.Tokens.Jwt. Please use Bouncy Castle or other third party libraries if you need a more feature rich library. For example, System.IdentityModel.Tokens.Jwt does not have support for PEM encoded files. Bouncy Castle does have support for PEM encoded files.
 
 ## Dependancies
 
-Microsoft.IdentityModel.Tokens.Jwt  
+System.IdentityModel.Tokens.Jwt  
 Microsoft.Extensions.Options  
 
 ## Installing
@@ -27,8 +27,9 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 ...
-//Example implementation of an inMemory repository for refresh tokens. In production, you would use a database store and not an inMemory store.
-IRefreshTokenRepository inMemoryRepository = new MyInMemoryRefreshTokenRepository(); //Never use this in production
+//Example implementation of an inMemory repository for refresh tokens. In production, you would use a database
+//store and not an inMemory store. Never use this in production.
+IRefreshTokenRepository inMemoryRepository = new MyInMemoryRefreshTokenRepository();
 
 //JWT TokenValidationParameters
 var tokenValidationParameters = new TokenValidationParameters
@@ -38,14 +39,17 @@ var tokenValidationParameters = new TokenValidationParameters
     ValidateAudience = true,
     ValidAudience = "you",
     ValidateIssuerSigningKey = true,
-    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("MySuperDuperSecretSymmetricKey")), //Key cannot be too short or it won't work
-    ValidateLifetime = true, //Set this to false for Access tokens never to expire
+    //Key cannot be shorter than 16 characters or it won't work
+    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("MySuperDuperSecretSymmetricKey")),
+    //Set this to false for Access tokens never to expire
+    ValidateLifetime = true,
     SaveSigninToken = true,
 };
 
 //JWT Settings
 var settings = new JwtTokenSettings
 {
+    //This algorithm can only be used in combination with SymmetricSecurityKey
     SecurityAlgorithm = SecurityAlgorithm.HS256,
     AccessTokenExpirationInMinutes = 60,
     RefreshTokenExpirationInHours = 2,
@@ -70,8 +74,8 @@ var jwtTokenService = new JwtTokenService(settings, inMemoryRepository);
 //Generate Access token
 string accessToken = jwtTokenService.GenerateAccessToken(userName, roles, claims);
 
-//Validate Access token and retrieve claims
-ClaimsPrincipal claimsPrincipal = jwtTokenService.GetClaimsFromAccessToken(accessToken); //Will throw exception if token is invalid or expired
+//Validate Access token and retrieve claims, Will throw exception if token is invalid or expired
+ClaimsPrincipal claimsPrincipal = jwtTokenService.GetClaimsFromAccessToken(accessToken);
 
 //Get data from token
 string userNameFromToken = jwtTokenService.GetUserName(claimsPrincipal);
@@ -149,7 +153,7 @@ var tokenValidationParameters = new TokenValidationParameters
 //JWT Settings
 var settings = new JwtTokenSettings
 {
-    SecurityAlgorithm = SecurityAlgorithm.HS256, // <-- Options: HS256, HS256, HS512
+    SecurityAlgorithm = SecurityAlgorithm.HS256, // <-- Options: HS256, HS384, HS512
     AccessTokenExpirationInMinutes = 60,
     RefreshTokenExpirationInHours = 2,
     TokenValidationParameters = tokenValidationParameters,
@@ -158,7 +162,9 @@ var settings = new JwtTokenSettings
 RSA Key (RS256, RS384, RS512)
 ```csharp
 //JWT TokenValidationParameters
-var rsa = new RsaHelper(); //Dispose of this when you do not need the generated keys. If you dispose of this, you cannot generate new access tokens or validate existing tokens anymore.
+//If you dispose RsaHelper, all key material will be disposed. All generated SecurityKeys will also not work anymore.
+//Only dispose if you don't need the generated keys anymore.
+var rsa = new RsaHelper(); 
 var tokenValidationParameters = new TokenValidationParameters
 {
     ValidateIssuer = true,
@@ -173,7 +179,7 @@ var tokenValidationParameters = new TokenValidationParameters
 //JWT Settings
 var settings = new JwtTokenSettings
 {
-    SecurityAlgorithm = SecurityAlgorithm.RS256, // <-- Options: RS256, RS256, RS512
+    SecurityAlgorithm = SecurityAlgorithm.RS256, // <-- Options: RS256, RS384, RS512
     AccessTokenExpirationInMinutes = 60,
     RefreshTokenExpirationInHours = 2,
     TokenValidationParameters = tokenValidationParameters,
@@ -182,7 +188,9 @@ var settings = new JwtTokenSettings
 ECDsa Key (ES256, ES384, ES512)
 ```csharp
 //JWT TokenValidationParameters
-var ECDsa = new ECDsaHelper(); //Dispose of this when you do not need the generated keys. If you dispose of this, you cannot generate new access tokens or validate existing tokens anymore.
+//If you dispose ECDsaHelper, all key material will be disposed. All generated SecurityKeys will also not work anymore.
+//Only dispose if you don't need the generated keys anymore.
+var ECDsa = new ECDsaHelper(); 
 var tokenValidationParameters = new TokenValidationParameters
 {
     ValidateIssuer = true,
@@ -190,14 +198,15 @@ var tokenValidationParameters = new TokenValidationParameters
     ValidateAudience = true,
     ValidAudience = "you",
     ValidateIssuerSigningKey = true,
-    IssuerSigningKey = ECDsa.CreateECDsaSecurityKey(ECDsaCurve.P256), // <-- ECDsa Key. Curve options: P256 (default), P384, P521. Default is used if none is provided.
+    //ECDsa Key. Curve options: P256 (default), P384, P521. Default is used if none is provided.
+    IssuerSigningKey = ECDsa.CreateECDsaSecurityKey(ECDsaCurve.P256), 
     ValidateLifetime = true,
     SaveSigninToken = true,
 };
 //JWT Settings
 var settings = new JwtTokenSettings
 {
-    SecurityAlgorithm = SecurityAlgorithm.ES256, // <-- Options: ES256, ES256, ES512
+    SecurityAlgorithm = SecurityAlgorithm.ES256, // <-- Options: ES256, ES384, ES512
     AccessTokenExpirationInMinutes = 60,
     RefreshTokenExpirationInHours = 2,
     TokenValidationParameters = tokenValidationParameters,
@@ -209,16 +218,18 @@ Use a console app to create a new private key and Copy the file over to your ASP
 ```csharp
 using var ECDsa = new ECDsaHelper();
 var myKeyECDsaKey = ECDsa.CreateECDsaSecurityKey(ECDsaCurve.P521);
-var keyString = ECDsa.ECDsaSecurityKeyToPrivateKeyString(myKeyECDsaKey);
+var keyString = ECDsaHelper.ECDsaSecurityKeyToPrivateKeyString(myKeyECDsaKey);
 File.WriteAllText("ECDsaKeyPriv.txt", keyString);
 ```
 Then convert the file to a ECDsaSecurityKey
 ```csharp
-var ECDsa = new ECDsaHelper(); //Dispose of this when you do not need the generated keys. If you dispose of this, you cannot generate new access tokens or validate existing tokens anymore.
+//If you dispose ECDsaHelper, all key material will be disposed. All generated SecurityKeys will also not work anymore.
+//Only dispose if you don't need the generated keys anymore.
+var ECDsa = new ECDsaHelper();
 var tokenValidationParameters = new TokenValidationParameters
 {
     ValidateIssuer = true,
-    ValidIssuer = Configuration["JwtSettings:Issuer"],
+    ValidIssuer = Configuration["JwtSettings:Issuer"], //Get settings from appsettings.json
     ValidateAudience = true,
     ValidAudience = Configuration["JwtSettings:Audience"],
     ValidateIssuerSigningKey = true,
@@ -239,7 +250,7 @@ public void ConfigureServices(IServiceCollection services)
     var tokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidIssuer = Configuration["JwtSettings:Issuer"],
+        ValidIssuer = Configuration["JwtSettings:Issuer"], //Get settings from appsettings.json
         ValidateAudience = true,
         ValidAudience = Configuration["JwtSettings:Audience"],
         ValidateIssuerSigningKey = true,
@@ -259,8 +270,9 @@ public void ConfigureServices(IServiceCollection services)
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         })
         .AddJwtBearer(options => options.TokenValidationParameters = tokenValidationParameters);
-    //Also make sure you provide your own implementation of a RefreshToken repository. You don't have to provide a IRefreshTokenRepository, if you don't plan on using refreshing tokens.
-    services.AddScoped<IRefreshTokenRepository, MyInMemoryRefreshTokenRepository>(); //Do not use (in-memory store) in production
+    //Also make sure you provide your own implementation of a RefreshToken repository. You don't have to provide a IRefreshTokenRepository,
+    //if you don't plan on using refreshing tokens. Do not use (in-memory store) in production
+    services.AddScoped<IRefreshTokenRepository, MyInMemoryRefreshTokenRepository>();
 }
 ```
 
@@ -305,7 +317,7 @@ public class AuthController : ControllerBase
         this.jwtTokenService = jwtTokenService;
     }
 
-    //An example login endpoint
+    //An example login endpoint. Make sure this endpoint is only callable from https
     public ActionResult Token(string username, string password)
     {
         //get user from data store
@@ -333,7 +345,7 @@ public class AuthController : ControllerBase
     public ActionResult Refresh(string accessToken, string refreshToken)
     {
         //get userId from access token
-        var claimsPrincipal = jwtTokenService.GetPrincipalFromExpiredAccessToken(accessToken);
+        var claimsPrincipal = jwtTokenService.GetClaimsFromExpiredAccessToken(accessToken);
         var userIdFromToken = jwtTokenService.GetClaim(claimsPrincipal, "userId");
 
         if (!int.TryParse(userIdFromToken, out int userId)) return Unauthorized("Invalid access token");
