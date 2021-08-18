@@ -10,7 +10,7 @@ namespace Ng.Services
     /// </summary>
     public sealed class ECDsaHelper : IDisposable
     {
-        private readonly HashSet<ECDsa> ecdsaCngList = new HashSet<ECDsa>();
+        private readonly HashSet<ECDsa> ecdsaCngList = new();
 
         /// <summary>
         /// Creates an Elliptic Curve DSA security key.

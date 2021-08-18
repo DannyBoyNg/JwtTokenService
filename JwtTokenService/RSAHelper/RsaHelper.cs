@@ -10,7 +10,7 @@ namespace Ng.Services
     /// </summary>
     public sealed class RsaHelper : IDisposable
     {
-        private readonly HashSet<RSACng> rsaCngList = new HashSet<RSACng>();
+        private readonly HashSet<RSACng> rsaCngList = new();
 
         /// <summary>
         /// Creates the RSA security key.

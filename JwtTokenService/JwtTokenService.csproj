@@ -16,7 +16,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>jwt access refresh token tokens HS256 HS384 HS512 RS256 RS384 RS512 ES256 ES384 ES512 RSA ECDsa accesstoken refreshtoken symmetric asymmetric claims</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.8.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.12.1" />
   </ItemGroup>
 
   <ItemGroup>
