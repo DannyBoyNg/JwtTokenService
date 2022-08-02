@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29911.84
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JwtTokenService", "JwtTokenService\JwtTokenService.csproj", "{5FB8AAB1-550D-4848-9072-72D878907223}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JwtTokenService", "JwtTokenService\JwtTokenService.csproj", "{C0BB8F39-7EC5-4B52-9174-AB89F4B23899}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5FB8AAB1-550D-4848-9072-72D878907223}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5FB8AAB1-550D-4848-9072-72D878907223}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5FB8AAB1-550D-4848-9072-72D878907223}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5FB8AAB1-550D-4848-9072-72D878907223}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0BB8F39-7EC5-4B52-9174-AB89F4B23899}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0BB8F39-7EC5-4B52-9174-AB89F4B23899}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0BB8F39-7EC5-4B52-9174-AB89F4B23899}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0BB8F39-7EC5-4B52-9174-AB89F4B23899}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {077F278D-C31D-408F-8AA3-D7427058FE12}
+		SolutionGuid = {25D9DF7D-D401-4715-BA84-BD4A1CDC7360}
 	EndGlobalSection
 EndGlobal
