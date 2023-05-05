@@ -19,10 +19,6 @@ namespace Ng.Services
         /// Gets the settings.
         /// </summary>
         public JwtTokenSettings Settings { get; }
-        /// <summary>
-        /// Gets the refresh token repo if set.
-        /// </summary>
-        public IRefreshTokenRepository? RefreshTokenRepo { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JwtTokenService"/> class.
@@ -34,27 +30,7 @@ namespace Ng.Services
         /// Initializes a new instance of the <see cref="JwtTokenService"/> class.
         /// </summary>
         /// <param name="settings">The settings.</param>
-        /// <param name="refreshTokenRepo">The refresh token repo.</param>
-        public JwtTokenService(
-            IOptions<JwtTokenSettings> settings,
-            IRefreshTokenRepository? refreshTokenRepo = null)
-        {
-            Settings = settings?.Value ?? new JwtTokenSettings();
-            RefreshTokenRepo = refreshTokenRepo;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JwtTokenService"/> class.
-        /// </summary>
-        /// <param name="settings">The JWT token settings.</param>
-        /// <param name="refreshTokenRepo">The refresh token repo.</param>
-        public JwtTokenService(
-            JwtTokenSettings settings,
-            IRefreshTokenRepository? refreshTokenRepo = null)
-        {
-            Settings = settings ?? new JwtTokenSettings();
-            RefreshTokenRepo = refreshTokenRepo;
-        }
+        public JwtTokenService(IOptions<JwtTokenSettings> settings) => Settings = settings?.Value ?? new JwtTokenSettings();
 
         /// <summary>
         /// Generates an access token.
@@ -233,49 +209,10 @@ namespace Ng.Services
         }
 
         /// <summary>
-        /// Stores the refresh token with the provided repository that implements IRefreshTokenRepository.
+        /// Check if the refresh token is expired.
         /// </summary>
-        /// <param name="userId">The user identifier.</param>
         /// <param name="refreshToken">The refresh token.</param>
-        /// <exception cref="Ng.Services.NoRefreshTokenRepositorySetException">Thrown when the refresh token repository is not provided.</exception>
-        /// <exception cref="ArgumentNullException">Thrown when the refresh token is null.</exception>
-        public void StoreRefreshToken(int userId, string refreshToken)
-        {
-            if (RefreshTokenRepo == null) throw new NoRefreshTokenRepositorySetException();
-            if (refreshToken == null) throw new ArgumentNullException(nameof(refreshToken));
-            RefreshTokenRepo.Insert(userId, refreshToken);
-        }
-
-        /// <summary>
-        /// Validates the refresh token. This method will also need a repository that implements IRefreshTokenRepository.
-        /// </summary>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="refreshToken">The refresh token.</param>
-        /// <exception cref="Ng.Services.NoRefreshTokenRepositorySetException">Thrown when the refresh token repository is not provided.</exception>
-        /// <exception cref="Ng.Services.SessionExpiredException">Thrown when the refresh token is expired.</exception>
-        /// <exception cref="Ng.Services.InvalidRefreshTokenException">Thrown when the refresh token cannot be found in the data store.</exception>
-        public void ValidateRefreshToken(int userId, string refreshToken)
-        {
-            if (RefreshTokenRepo == null) throw new NoRefreshTokenRepositorySetException();
-            var tokenExpired = false;
-            var tokens = RefreshTokenRepo.GetByUserId(userId).ToList();
-            //Remove expired refresh tokens from db
-            foreach (var token in tokens)
-            {
-                if (IsRefreshTokenExpired(token.Token))
-                {
-                    if (token.Token == refreshToken) tokenExpired = true;
-                    RefreshTokenRepo.Delete(token);
-                }
-            }
-            //Validate user provided refresh token
-            var dbToken = tokens.Where(x => x.Token == refreshToken).SingleOrDefault();
-            if (dbToken != null) RefreshTokenRepo.Delete(dbToken);
-            if (tokenExpired) throw new SessionExpiredException();
-            if (dbToken == null) throw new InvalidRefreshTokenException();
-        }
-
-        private bool IsRefreshTokenExpired(string refreshToken)
+        public bool IsRefreshTokenExpired(string refreshToken)
         {
             if (Settings.RefreshTokenExpirationInHours == 0) return false; //When set to 0, refresh token never expires
             DateTime when = GetCreationTimeFromRefreshToken(refreshToken);

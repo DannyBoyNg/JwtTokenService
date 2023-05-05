@@ -17,6 +17,8 @@ Install-Package Ng.JwtTokenService
 
 ## Usage
 
+Breaking change: from version 7.0, IRefreshTokenRepo has been removed in favor of a more simplified api. Storing and retrieving refresh tokens are not handled by this package anymore. Use the new function IsRefreshTokenExpired to determine if the refresh token is expired.
+
 Console application
 
 ```csharp
@@ -27,9 +29,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 ...
-//Example implementation of an inMemory repository for refresh tokens. In production, you would use a database
-//store and not an inMemory store. Never use this in production.
-IRefreshTokenRepository inMemoryRepository = new MyInMemoryRefreshTokenRepository();
 
 //JWT TokenValidationParameters
 var tokenValidationParameters = new TokenValidationParameters
@@ -91,48 +90,11 @@ string userNameFromExpiredToken = jwtTokenService.GetUserName(claimsPrincipalExp
 //Generate Refresh token. A refresh token is just a random string, you could generate this yourself also.
 string refreshToken = jwtTokenService.GenerateRefreshToken();
 
-//These methods will throw an exception if no refreshToken repository is provided
-jwtTokenService.StoreRefreshToken(userId, refreshToken);
-jwtTokenService.ValidateRefreshToken(userId, refreshToken); //Will throw an exception if refresh token is not valid
+//Check if the refresh token has expired.
+if(jwtTokenService.IsRefreshTokenExpired(refreshToken)) throw new Exception("Refresh token expired");
 
 //Generate new Access token with an old Access token. It copies all the user defined claims to the new token.
 var newAccessToken = jwtTokenService.GenerateAccessTokenFromOldAccessToken(accessToken);
-```
-
-Example of an inMemory refreshToken repository (never use in production)
-
-```csharp
-public class MyInMemoryRefreshTokenRepository : IRefreshTokenRepository
-{
-    static readonly List<IRefreshToken> inMemStore = new List<IRefreshToken>();
-
-    public void Delete(IRefreshToken refreshToken)
-    {
-        var item = inMemStore.Where(x => x.Token == refreshToken.Token && x.UserId == refreshToken.UserId).SingleOrDefault();
-        if (item != null) inMemStore.Remove(item);
-    }
-
-    public void DeleteAll(int userId)
-    {
-        inMemStore.Clear();
-    }
-
-    public IEnumerable<IRefreshToken> GetByUserId(int userId)
-    {
-        return inMemStore.Where(x => x.UserId == userId);
-    }
-
-    public void Insert(int userId, string refreshToken)
-    {
-        inMemStore.Add(new RefreshToken { UserId = userId, Token = refreshToken });
-    }
-}
-
-public class RefreshToken : IRefreshToken
-{
-    public string Token { get; set; }
-    public int UserId { get; set; }
-}
 ```
 
 Use different Signing algorithms  
@@ -212,7 +174,7 @@ var settings = new JwtTokenSettings
     TokenValidationParameters = tokenValidationParameters,
 };
 ```
-Notes: It is recommended to store your asymmetric keys to a file and load them when your app starts. The main reason for this is that when you restart your web app, all the tokens that you have already issued will no longer work if you generate a new asymmetric key at startup. (You don't have to use a file, you could any secure key provider)  
+Notes: It is recommended to store your asymmetric keys to a file and load them when your app starts. The main reason for this is that when you restart your web app, all the tokens that you have already issued will no longer work if you generate a new asymmetric key at startup. (You don't have to use a file, you could use any secure key provider)  
 
 Use a console app to create a new private key and Copy the file over to your ASP.NET Core app root
 ```csharp
@@ -241,66 +203,51 @@ var tokenValidationParameters = new TokenValidationParameters
 
 ASP.NET Core  
 
-Register service with dependency injection in Startup.cs
-```csharp
-using Ng.Services;
-...
-public void ConfigureServices(IServiceCollection services)
-{
-    var tokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidIssuer = Configuration["JwtSettings:Issuer"], //Get settings from appsettings.json
-        ValidateAudience = true,
-        ValidAudience = Configuration["JwtSettings:Audience"],
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JwtSettings:Key"])),
-        ValidateLifetime = true,
-        SaveSigninToken = true,
-    };
-    services.AddJwtTokenService(options => {
-        options.SecurityAlgorithm = SecurityAlgorithm.HS256;
-        options.AccessTokenExpirationInMinutes = int.Parse(Configuration["JwtSettings:AccessTokenExpirationInMinutes"]); //Default: 60
-        options.RefreshTokenExpirationInHours = int.Parse(Configuration["JwtSettings:RefreshTokenExpirationInHours"]); //Default: 2
-        options.TokenValidationParameters = tokenValidationParameters;
-    });
-    services
-        .AddAuthentication(options => {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options => options.TokenValidationParameters = tokenValidationParameters);
-    //Also make sure you provide your own implementation of a RefreshToken repository. You don't have to provide a IRefreshTokenRepository,
-    //if you don't plan on using refreshing tokens. Do not use (in-memory store) in production
-    services.AddScoped<IRefreshTokenRepository, MyInMemoryRefreshTokenRepository>();
-}
-```
-
+Add Services with dependency injection
 Add UseAuthentication to Configure/Pipeline
 ```csharp
-// This is just an example Configure/Pipeline. It doesn't need to look exactly like this.
-public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+// This is just an example Configure/Pipeline. It doesn't need to look exactly like this. (Program.cs)
+using Ng.Services;
+...
+var builder = WebApplication.CreateBuilder(args);
+
+var tokenValidationParameters = new TokenValidationParameters
 {
-    if (env.IsDevelopment())
-    {
-        app.UseDeveloperExceptionPage();
-    }
+    ValidateIssuer = true,
+    ValidIssuer = Configuration["JwtSettings:Issuer"], //Get settings from appsettings.json
+    ValidateAudience = true,
+    ValidAudience = Configuration["JwtSettings:Audience"],
+    ValidateIssuerSigningKey = true,
+    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JwtSettings:Key"])),
+    ValidateLifetime = true,
+    SaveSigninToken = true,
+};
+builder.Services.AddJwtTokenService(options => {
+    options.SecurityAlgorithm = SecurityAlgorithm.HS256;
+    options.AccessTokenExpirationInMinutes = int.Parse(Configuration["JwtSettings:AccessTokenExpirationInMinutes"]); //Default: 60
+    options.RefreshTokenExpirationInHours = int.Parse(Configuration["JwtSettings:RefreshTokenExpirationInHours"]); //Default: 2
+    options.TokenValidationParameters = tokenValidationParameters;
+});
+builder.Services
+    .AddAuthentication(options => {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options => options.TokenValidationParameters = tokenValidationParameters);
 
-    app.UseHttpsRedirection();
+builder.Services.AddControllers();
 
-    app.UseRouting();
+var app = builder.Build();
 
-    app.UseCors("CorsPolicy");
+app.UseHttpsRedirection();
 
-    app.UseAuthentication(); // <-- Add this to the pipeline
+app.UseAuthentication(); // <-- Add this to the pipeline
 
-    app.UseAuthorization();
+app.UseAuthorization();
 
-    app.UseEndpoints(endpoints =>
-    {
-        endpoints.MapControllers();
-    });
-}
+app.MapControllers();
+
+app.Run();
 ```
 
 Create an Auth controller with Login/Refresh endpoints
@@ -336,8 +283,8 @@ public class AuthController : ControllerBase
         //create tokens
         var accessToken = jwtTokenService.GenerateAccessToken(user.UserName, roles, claims);
         var refreshToken = jwtTokenService.GenerateRefreshToken();
-        //store refresh token
-        jwtTokenService.StoreRefreshToken(user.Id, refreshToken);
+        //store refresh token in database
+        ...
         return Ok(new JwtToken { AccessToken = accessToken, RefreshToken = refreshToken, TokenType = "bearer" });
     }
 
@@ -347,15 +294,18 @@ public class AuthController : ControllerBase
         //get userId from access token
         var claimsPrincipal = jwtTokenService.GetClaimsFromExpiredAccessToken(accessToken);
         var userIdFromToken = jwtTokenService.GetClaim(claimsPrincipal, "userId");
-
         if (!int.TryParse(userIdFromToken, out int userId)) return Unauthorized("Invalid access token");
-        //validate refresh token
-        jwtTokenService.ValidateRefreshToken(userId, refreshToken);
+
+        //Determine if refresh token belongs to user
+        //...
+
+        //Check if refresh token is expired
+        if(jwtTokenService.IsRefreshTokenExpired(refreshToken)) return Unauthorized("Expired refresh token");
         //create new tokens
         var newAccessToken = jwtTokenService.GenerateAccessTokenFromOldAccessToken(accessToken);
         var newRefreshToken = jwtTokenService.GenerateRefreshToken();
-        //store refresh token in data store
-        jwtTokenService.StoreRefreshToken(userId, newRefreshToken);
+        //store new refresh token in database and remove old token. 
+        //...
         return Ok(new JwtToken { AccessToken = newAccessToken, RefreshToken = newRefreshToken, TokenType = "bearer" });
     }
 }

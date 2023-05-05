@@ -9,10 +9,6 @@ namespace Ng.Services
     public interface IJwtTokenService
     {
         /// <summary>
-        /// Gets the refresh token repo if set.
-        /// </summary>
-        IRefreshTokenRepository? RefreshTokenRepo { get; }
-        /// <summary>
         /// Gets the settings.
         /// </summary>
         JwtTokenSettings Settings { get; }
@@ -78,16 +74,9 @@ namespace Ng.Services
         /// <param name="claimsPrincipal">The claims principal.</param>
         string? GetUserName(ClaimsPrincipal claimsPrincipal);
         /// <summary>
-        /// Stores the refresh token with the provided repository that implements IRefreshTokenRepository.
+        /// Check if the refresh token is expired.
         /// </summary>
-        /// <param name="userId">The user identifier.</param>
         /// <param name="refreshToken">The refresh token.</param>
-        void StoreRefreshToken(int userId, string refreshToken);
-        /// <summary>
-        /// Validates the refresh token. This method will also need a repository that implements IRefreshTokenRepository.
-        /// </summary>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="refreshToken">The refresh token.</param>
-        void ValidateRefreshToken(int userId, string refreshToken);
+        bool IsRefreshTokenExpired(string refreshToken);
     }
 }
