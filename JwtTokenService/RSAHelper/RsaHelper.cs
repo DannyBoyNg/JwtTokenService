@@ -10,7 +10,7 @@ namespace Ng.Services
     /// </summary>
     public sealed class RsaHelper : IDisposable
     {
-        private readonly HashSet<RSACng> rsaCngList = new();
+        private readonly HashSet<RSACng> rsaCngList = [];
 
         /// <summary>
         /// Creates the RSA security key.
@@ -20,7 +20,7 @@ namespace Ng.Services
         /// <returns>RsaSecurityKey</returns>
         public RsaSecurityKey CreateRSASecurityKey(int keySize = 2048, CngKeyCreationParameters? cngKeyCreationParameters = null)
         {
-            if (cngKeyCreationParameters == null) cngKeyCreationParameters = new CngKeyCreationParameters
+            cngKeyCreationParameters ??= new CngKeyCreationParameters
             {
                 KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
                 KeyUsage = CngKeyUsages.AllUsages,

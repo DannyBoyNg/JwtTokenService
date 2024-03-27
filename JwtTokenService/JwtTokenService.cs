@@ -53,9 +53,9 @@ namespace Ng.Services
 
                 var claims = new List<Claim>
                 {
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(JwtRegisteredClaimNames.Iat, issuedAtUnix.ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
-                    new Claim(ClaimTypes.Name, username),
+                    new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new(JwtRegisteredClaimNames.Iat, issuedAtUnix.ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
+                    new(ClaimTypes.Name, username),
                 };
                 if (roles != null && roles.Any()) foreach (var role in roles) claims.Add(new Claim(ClaimTypes.Role, role));
                 if (userDefinedClaims != null && userDefinedClaims.Any()) claims.AddRange(userDefinedClaims.Where(UserDefinedClaimsFilter));
@@ -143,7 +143,7 @@ namespace Ng.Services
         /// <returns></returns>
         public IEnumerable<Claim> GetAllClaims(ClaimsPrincipal claimsPrincipal)
         {
-            if (claimsPrincipal == null) return new List<Claim>();
+            if (claimsPrincipal == null) return [];
             return claimsPrincipal.Claims.ToList();
         }
 
@@ -156,7 +156,7 @@ namespace Ng.Services
         /// </returns>
         public IEnumerable<Claim> GetUserDefinedClaims(ClaimsPrincipal claimsPrincipal)
         {
-            if (claimsPrincipal == null) return new List<Claim>();
+            if (claimsPrincipal == null) return [];
             return claimsPrincipal.Claims.Where(UserDefinedClaimsFilter).ToList();
         }
 

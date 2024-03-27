@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <Nullable>enable</Nullable>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>latest</LangVersion>
 
     <RootNamespace>Ng.Services</RootNamespace>
     <PackageId>Ng.JwtTokenService</PackageId>
@@ -17,7 +17,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>jwt access refresh token tokens HS256 HS384 HS512 RS256 RS384 RS512 ES256 ES384 ES512 RSA ECDsa accesstoken refreshtoken symmetric asymmetric claims bearer authentication</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>7.0</Version>
+    <Version>8.0</Version>
     <Title>JwtTokenService</Title>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
@@ -31,8 +31,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.30.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.5.0" />
   </ItemGroup>
 
   <ItemGroup>
