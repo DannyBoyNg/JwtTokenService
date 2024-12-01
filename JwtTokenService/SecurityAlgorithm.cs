@@ -1,4 +1,4 @@
-﻿namespace Ng.Services
+﻿namespace Ng.JwtTokenService
 {
     /// <summary>
     /// Supported SecurityAlgorithm options

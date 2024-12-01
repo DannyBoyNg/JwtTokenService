@@ -1,18 +1,20 @@
 ﻿using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using Ng.JwtTokenService.Exceptions;
+using Ng.JwtTokenService.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
-namespace Ng.Services
+namespace Ng.JwtTokenService
 {
     /// <summary>
     /// The JWT Token Service
     /// </summary>
-    /// <seealso cref="Ng.Services.IJwtTokenService" />
+    /// <seealso cref="Ng.JwtTokenService.Interfaces.IJwtTokenService" />
     public class JwtTokenService : IJwtTokenService
     {
         /// <summary>
@@ -41,8 +43,8 @@ namespace Ng.Services
         /// <returns>
         /// An access token
         /// </returns>
-        /// <exception cref="Ng.Services.EncryptionKeyNotSetException"></exception>
-        /// <exception cref="Ng.Services.EncryptionKeyIsTooShortException"></exception>
+        /// <exception cref="Ng.JwtTokenService.Exceptions.EncryptionKeyNotSetException"></exception>
+        /// <exception cref="Ng.JwtTokenService.Exceptions.EncryptionKeyIsTooShortException"></exception>
         public string GenerateAccessToken(string username, IEnumerable<string>? roles = null, IEnumerable<Claim>? userDefinedClaims = null)
         {
             try
@@ -51,28 +53,48 @@ namespace Ng.Services
                 var issuedAtUnix = ((DateTimeOffset)issuedAt).ToUnixTimeSeconds();
                 var expiresAt = issuedAt.AddMinutes(Settings.AccessTokenExpirationInMinutes);
 
-                var claims = new List<Claim>
+                var claims = new Dictionary<string, object>
                 {
-                    new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new(JwtRegisteredClaimNames.Iat, issuedAtUnix.ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
-                    new(ClaimTypes.Name, username),
+                    [JwtRegisteredClaimNames.Jti] = Guid.NewGuid(),
+                    [JwtRegisteredClaimNames.Iat] = issuedAtUnix,
+                    [ClaimTypes.Name] = username,
                 };
-                if (roles != null && roles.Any()) foreach (var role in roles) claims.Add(new Claim(ClaimTypes.Role, role));
-                if (userDefinedClaims != null && userDefinedClaims.Any()) claims.AddRange(userDefinedClaims.Where(UserDefinedClaimsFilter));
+                if (roles != null && roles.Any()) foreach (var role in roles) claims.Add(ClaimTypes.Role, role);
+                if (userDefinedClaims != null && userDefinedClaims.Any())
+                {
+                    foreach (var userDefinedClaim in userDefinedClaims)
+                    {
+                        if (UserDefinedClaimsFilter(userDefinedClaim)) claims.TryAdd(userDefinedClaim.Type, userDefinedClaim.Value);
+                    }
+                }
 
                 var key = Settings.TokenValidationParameters?.IssuerSigningKey ?? throw new EncryptionKeyNotSetException();
-                var token = new JwtSecurityToken(
-                  issuer: Settings.TokenValidationParameters.ValidIssuer,
-                  audience: Settings.TokenValidationParameters.ValidAudience,
-                  claims: claims,
-                  notBefore: issuedAt,
-                  expires: expiresAt,
-                  signingCredentials: new SigningCredentials(key, Settings.SecurityAlgorithm.ToString())
-                );
-                var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
-                return accessToken;
+                var securityTokenDescriptor = new SecurityTokenDescriptor {
+                  Issuer = Settings.TokenValidationParameters.ValidIssuer,
+                  Audience = Settings.TokenValidationParameters.ValidAudience,
+                  Claims = claims,
+                  NotBefore = issuedAt,
+                  Expires = expiresAt,
+                  SigningCredentials = new SigningCredentials(key, Settings.SecurityAlgorithm.ToString())
+                };
+                return new JsonWebTokenHandler().CreateToken(securityTokenDescriptor);
             }
             catch (ArgumentOutOfRangeException) { throw new EncryptionKeyIsTooShortException(); }
+        }
+
+        /// <summary>
+        /// [Obsolete] Generates an access token from an old access token.
+        /// </summary>
+        /// <param name="oldAccessToken">The old access token.</param>
+        /// <returns>
+        /// A new access token
+        /// </returns>
+        /// <exception cref="ArgumentNullException">Thrown when oldAccessToken is null or an empty string.</exception>
+        /// <exception cref="InvalidAccessTokenException">Thrown when it cannot retrieve username from the old access token.</exception>
+        [Obsolete("This method is obsolete, please use GenerateAccessTokenFromOldAccessTokenAsync instead. This breaking change is caused by upgrading the package System.IdentityModel.Tokens.Jwt to the more modern Microsoft.IdentityModel.JsonWebTokens", true)]
+        public string GenerateAccessTokenFromOldAccessToken(string oldAccessToken)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -84,10 +106,10 @@ namespace Ng.Services
         /// </returns>
         /// <exception cref="ArgumentNullException">Thrown when oldAccessToken is null or an empty string.</exception>
         /// <exception cref="InvalidAccessTokenException">Thrown when it cannot retrieve username from the old access token.</exception>
-        public string GenerateAccessTokenFromOldAccessToken(string oldAccessToken)
+        public async Task<string> GenerateAccessTokenFromOldAccessTokenAsync(string oldAccessToken)
         {
             if (string.IsNullOrWhiteSpace(oldAccessToken)) throw new ArgumentNullException(nameof(oldAccessToken));
-            var claimsPrincipal = GetClaimsFromExpiredAccessToken(oldAccessToken);
+            var claimsPrincipal = await GetClaimsFromExpiredAccessTokenAsync(oldAccessToken);
             var userNameFromToken = GetUserName(claimsPrincipal) ?? throw new InvalidAccessTokenException();
             var roles = GetRoles(claimsPrincipal);
             var userDefinedClaims = GetUserDefinedClaims(claimsPrincipal);
@@ -101,13 +123,28 @@ namespace Ng.Services
         /// <returns>
         /// The claims principal contained in the access token
         /// </returns>
-        /// <exception cref="Ng.Services.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
-        /// <exception cref="Ng.Services.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
+        /// <exception cref="Ng.JwtTokenService.Exceptions.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
+        /// <exception cref="Ng.JwtTokenService.Exceptions.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
+        [Obsolete("This method is obsolete, please use GetClaimsFromExpiredAccessTokenAsync instead. This breaking change is caused by upgrading the package System.IdentityModel.Tokens.Jwt to the more modern Microsoft.IdentityModel.JsonWebTokens", true)]
         public ClaimsPrincipal GetClaimsFromExpiredAccessToken(string accessToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Validate the access token and get the claims principal from an expired access token. This method will not check the expiration time on the token.
+        /// </summary>
+        /// <param name="accessToken">The access token.</param>
+        /// <returns>
+        /// The claims principal contained in the access token
+        /// </returns>
+        /// <exception cref="Ng.JwtTokenService.Exceptions.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
+        /// <exception cref="Ng.JwtTokenService.Exceptions.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
+        public async Task<ClaimsPrincipal> GetClaimsFromExpiredAccessTokenAsync(string accessToken)
         {
             var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
             tokenValidationParameters.ValidateLifetime = false;
-            return ValidateAccessToken(accessToken, tokenValidationParameters);
+            return await ValidateAccessTokenAsync(accessToken, tokenValidationParameters);
         }
 
         /// <summary>
@@ -117,22 +154,37 @@ namespace Ng.Services
         /// <returns>
         /// The claims principal contained in the access token.
         /// </returns>
-        /// <exception cref="Ng.Services.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
-        /// <exception cref="Ng.Services.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
+        /// <exception cref="Ng.JwtTokenService.Exceptions.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
+        /// <exception cref="Ng.JwtTokenService.Exceptions.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
+        [Obsolete("This method is obsolete, please use GetClaimsFromAccessTokenAsync instead. This breaking change is caused by upgrading the package System.IdentityModel.Tokens.Jwt to the more modern Microsoft.IdentityModel.JsonWebTokens", true)]
         public ClaimsPrincipal GetClaimsFromAccessToken(string accessToken)
         {
-            var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
-            return ValidateAccessToken(accessToken, tokenValidationParameters);
+            throw new NotImplementedException();
         }
 
-        private ClaimsPrincipal ValidateAccessToken(string accessToken, TokenValidationParameters tokenValidationParameters)
+        /// <summary>
+        /// Validate the access token and get the claims principal from access token.
+        /// </summary>
+        /// <param name="accessToken">The access token.</param>
+        /// <returns>
+        /// The claims principal contained in the access token.
+        /// </returns>
+        /// <exception cref="Ng.JwtTokenService.Exceptions.TokenValidationParametersNotSetException">Thrown when no TokenValidationParameters are set in the JwtTokenSettings.</exception>
+        /// <exception cref="Ng.JwtTokenService.Exceptions.InvalidAccessTokenException">Thrown when the access token does not pass validation.</exception>
+        public async Task<ClaimsPrincipal> GetClaimsFromAccessTokenAsync(string accessToken)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var claimsPrincipal = tokenHandler.ValidateToken(accessToken, tokenValidationParameters, out SecurityToken securityToken);
-            if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(Settings.SecurityAlgorithm.ToString(), StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidAccessTokenException();
-            }
+            var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
+            return await ValidateAccessTokenAsync(accessToken, tokenValidationParameters);
+        }
+
+        private async Task<ClaimsPrincipal> ValidateAccessTokenAsync(string accessToken, TokenValidationParameters tokenValidationParameters)
+        {
+            var tokenHandler = new JsonWebTokenHandler();
+            var tokenValidationResult = await tokenHandler.ValidateTokenAsync(accessToken, tokenValidationParameters);
+            var claimsPrincipal = new ClaimsPrincipal(tokenValidationResult.ClaimsIdentity);
+            
+            if (!tokenValidationResult.IsValid) throw new InvalidAccessTokenException();
+
             return claimsPrincipal;
         }
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace Ng.Services
+namespace Ng.JwtTokenService.Exceptions
 {
     /// <summary>
     /// Encryption key was not set Exception

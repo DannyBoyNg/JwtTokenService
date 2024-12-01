@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Ng.JwtTokenService.Interfaces;
 using System;
 
-namespace Ng.Services
+namespace Ng.JwtTokenService
 {
     /// <summary>
     /// Contains static methods to help with Dependency Injection

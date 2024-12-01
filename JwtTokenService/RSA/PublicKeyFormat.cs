@@ -1,4 +1,4 @@
-﻿namespace Ng.Services
+﻿namespace Ng.JwtTokenService.RSA
 {
     /// <summary>
     /// Supported public key formats

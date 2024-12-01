@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace Ng.Services
+namespace Ng.JwtTokenService.Exceptions
 {
     /// <summary>
     /// Token Validation Parameters were not provided exception

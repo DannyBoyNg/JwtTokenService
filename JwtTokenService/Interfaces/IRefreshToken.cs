@@ -1,4 +1,4 @@
-﻿namespace Ng.Services
+﻿namespace Ng.JwtTokenService.Interfaces
 {
     /// <summary>
     /// Default interface for refresh tokens

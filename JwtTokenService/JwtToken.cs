@@ -1,4 +1,4 @@
-﻿namespace Ng.Services
+﻿namespace Ng.JwtTokenService
 {
     /// <summary>
     /// A default container for a JWT token

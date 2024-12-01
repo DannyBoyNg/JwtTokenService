@@ -1,6 +1,6 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 
-namespace Ng.Services
+namespace Ng.JwtTokenService
 {
     /// <summary>
     /// JWT token settings container

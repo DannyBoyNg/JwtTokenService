@@ -1,4 +1,4 @@
-﻿namespace Ng.Services
+﻿namespace Ng.JwtTokenService.ECDsa
 {
     /// <summary>
     /// Supported ECDsaCurve options

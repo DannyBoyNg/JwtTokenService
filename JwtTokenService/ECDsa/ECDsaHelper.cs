@@ -3,14 +3,14 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 
-namespace Ng.Services
+namespace Ng.JwtTokenService.ECDsa
 {
     /// <summary>
     /// A Helper for ECDsa security keys
     /// </summary>
     public sealed class ECDsaHelper : IDisposable
     {
-        private readonly HashSet<ECDsa> ecdsaCngList = [];
+        private readonly HashSet<System.Security.Cryptography.ECDsa> ecdsaCngList = [];
 
         /// <summary>
         /// Creates an Elliptic Curve DSA security key.

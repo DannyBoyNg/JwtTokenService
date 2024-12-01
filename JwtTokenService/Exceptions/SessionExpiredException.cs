@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace Ng.Services
+namespace Ng.JwtTokenService.Exceptions
 {
     /// <summary>
     /// Session expired Exception. Also refers too the refresh token being expired.

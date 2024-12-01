@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 
-namespace Ng.Services
+namespace Ng.JwtTokenService.RSA
 {
     /// <summary>
     /// A Helper for RSA security keys
