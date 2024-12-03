@@ -144,7 +144,9 @@ namespace Ng.JwtTokenService
         {
             var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
             tokenValidationParameters.ValidateLifetime = false;
-            return await ValidateAccessTokenAsync(accessToken, tokenValidationParameters);
+            var tokenValidationResult = await ValidateAccessTokenAsync(accessToken, tokenValidationParameters);
+            if (!tokenValidationResult.IsValid) throw new InvalidAccessTokenException();
+            return new ClaimsPrincipal(tokenValidationResult.ClaimsIdentity);
         }
 
         /// <summary>
@@ -174,18 +176,15 @@ namespace Ng.JwtTokenService
         public async Task<ClaimsPrincipal> GetClaimsFromAccessTokenAsync(string accessToken)
         {
             var tokenValidationParameters = Settings.TokenValidationParameters ?? throw new TokenValidationParametersNotSetException();
-            return await ValidateAccessTokenAsync(accessToken, tokenValidationParameters);
+            var tokenValidationResult = await ValidateAccessTokenAsync(accessToken, tokenValidationParameters);
+            if (!tokenValidationResult.IsValid) throw new InvalidAccessTokenException();
+            return new ClaimsPrincipal(tokenValidationResult.ClaimsIdentity);
         }
 
-        private async Task<ClaimsPrincipal> ValidateAccessTokenAsync(string accessToken, TokenValidationParameters tokenValidationParameters)
+        private async Task<TokenValidationResult> ValidateAccessTokenAsync(string accessToken, TokenValidationParameters tokenValidationParameters)
         {
             var tokenHandler = new JsonWebTokenHandler();
-            var tokenValidationResult = await tokenHandler.ValidateTokenAsync(accessToken, tokenValidationParameters);
-            var claimsPrincipal = new ClaimsPrincipal(tokenValidationResult.ClaimsIdentity);
-            
-            if (!tokenValidationResult.IsValid) throw new InvalidAccessTokenException();
-
-            return claimsPrincipal;
+            return await tokenHandler.ValidateTokenAsync(accessToken, tokenValidationParameters);
         }
 
         /// <summary>
