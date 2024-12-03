@@ -1,11 +1,11 @@
 # JwtTokenService
 
 A service to help manage JWT access tokens and refresh tokens in C#. Supports: HS256, HS384, HS512, RS256, RS384, RS512, ES256, ES384, ES512.  
-This service is a simple wrapper for System.IdentityModel.Tokens.Jwt. Please use Bouncy Castle or other third party libraries if you need a more feature rich library. For example, System.IdentityModel.Tokens.Jwt does not have support for PEM encoded files. Bouncy Castle does have support for PEM encoded files.
+This package is a simple wrapper for Microsoft.IdentityModel.JsonWebTokens and aims to make managing JWT tokens as easy as possible.
 
 ## Dependancies
 
-System.IdentityModel.Tokens.Jwt  
+Microsoft.IdentityModel.JsonWebTokens  
 Microsoft.Extensions.Options  
 
 ## Installing
@@ -15,19 +15,23 @@ Install from Nuget
 Install-Package Ng.JwtTokenService
 ```
 
+## Understanding claims, claimsIdentity and ClaimsPrincipal
+
+Claims are key-value pairs that store information about a user (like userId, name, email, role). ClaimsIdentity is a collection of claims. A claimsPrincipal may contains one or more claimsIdentities.
+
 ## Usage
 
-Breaking change: from version 7.0, IRefreshTokenRepo has been removed in favor of a more simplified api. Storing and retrieving refresh tokens are not handled by this package anymore. Use the new function IsRefreshTokenExpired to determine if the refresh token is expired.
+Breaking change: from version 9.0, this package uses the more modern Microsoft.IdentityModel.JsonWebTokens instead of System.IdentityModel.Tokens.Jwt. Because of this change certain functions will not work anymore. The compiler will generate an obsolete error for certain functions. To solve these errors use GenerateAccessTokenFromOldAccessTokenAsync instead of GenerateAccessTokenFromOldAccessToken, GetClaimsFromAccessTokenAsync instead of GetClaimsFromAccessToken and GetClaimsFromExpiredAccessTokenAsync instead of GetClaimsFromExpiredAccessToken.
+
+Breaking change: from version 7.0, IRefreshTokenRepo has been removed in favor of a more simplified api. Storing and retrieving refresh tokens are not handled by this package anymore. Use the new function IsRefreshTokenExpired to determine if the refresh token is expired. This does not validate a refresh token. You must validate the refresh token yourself by storing the refresh token in a database and by checking if a refresh token belongs to a certain user.
 
 Console application
 
 ```csharp
-using Microsoft.IdentityModel.Tokens;
-using Ng.Services;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using Ng.JwtTokenService;
 ...
 
 //JWT TokenValidationParameters
@@ -49,9 +53,9 @@ var tokenValidationParameters = new TokenValidationParameters
 var settings = new JwtTokenSettings
 {
     //This algorithm can only be used in combination with SymmetricSecurityKey
-    SecurityAlgorithm = SecurityAlgorithm.HS256,
-    AccessTokenExpirationInMinutes = 60,
-    RefreshTokenExpirationInHours = 2,
+    SecurityAlgorithm = SecurityAlgorithm.HS256, //default: SecurityAlgorithm.HS256
+    AccessTokenExpirationInMinutes = 60, //default: 60
+    RefreshTokenExpirationInHours = 2, //default: 2
     TokenValidationParameters = tokenValidationParameters,
 };
 
@@ -68,33 +72,33 @@ var claims = new List<Claim> {
 var roles = new string[] { "Admin", "SuperUser" };
 
 //Instantiate JWT service
-var jwtTokenService = new JwtTokenService(settings, inMemoryRepository);
+var jwtTokenService = new JwtTokenService(settings);
 
 //Generate Access token
 string accessToken = jwtTokenService.GenerateAccessToken(userName, roles, claims);
 
 //Validate Access token and retrieve claims, Will throw exception if token is invalid or expired
-ClaimsPrincipal claimsPrincipal = jwtTokenService.GetClaimsFromAccessToken(accessToken);
+ClaimsPrincipal claimsPrincipal = await jwtTokenService.GetClaimsFromAccessTokenAsync(accessToken);
 
-//Get data from token
-string userNameFromToken = jwtTokenService.GetUserName(claimsPrincipal);
-string userIdFromToken = jwtTokenService.GetClaim(claimsPrincipal, "userId");
-string[] rolesFromToken = jwtTokenService.GetRoles(claimsPrincipal);
+//Get data from token/ClaimsPrincipal
+string? userNameFromToken = jwtTokenService.GetUserName(claimsPrincipal);
+string? userIdFromToken = jwtTokenService.GetClaim(claimsPrincipal, "userId");
+string[]? rolesFromToken = jwtTokenService.GetRoles(claimsPrincipal);
 List<Claim> allClaimsFromToken = jwtTokenService.GetAllClaims(claimsPrincipal).ToList();
 List<Claim> userDefinedClaimsFromToken = jwtTokenService.GetUserDefinedClaims(claimsPrincipal).ToList();
 
-//Get data from expired token. This will check if signature is valid on the token.
-ClaimsPrincipal claimsPrincipalExpired = jwtTokenService.GetClaimsFromExpiredAccessToken(accessToken); //Will throw exception if token is invalid
-string userNameFromExpiredToken = jwtTokenService.GetUserName(claimsPrincipalExpired);
+//Lets say the access token has expired and you need to get data from it. This will still check if signature is valid on the token.
+ClaimsPrincipal claimsPrincipalExpired = await jwtTokenService.GetClaimsFromExpiredAccessTokenAsync(accessToken); //Will throw exception if token is invalid, will not check if token has expired
+string? userNameFromExpiredToken = jwtTokenService.GetUserName(claimsPrincipalExpired);
 
-//Generate Refresh token. A refresh token is just a random string, you could generate this yourself also.
+//Generate Refresh token. A refresh token is just a random string with a timestamp in it, you could generate this yourself also.
 string refreshToken = jwtTokenService.GenerateRefreshToken();
 
 //Check if the refresh token has expired.
-if(jwtTokenService.IsRefreshTokenExpired(refreshToken)) throw new Exception("Refresh token expired");
+if (jwtTokenService.IsRefreshTokenExpired(refreshToken)) throw new Exception("Refresh token expired");
 
 //Generate new Access token with an old Access token. It copies all the user defined claims to the new token.
-var newAccessToken = jwtTokenService.GenerateAccessTokenFromOldAccessToken(accessToken);
+var newAccessToken = await jwtTokenService.GenerateAccessTokenFromOldAccessTokenAsync(accessToken);
 ```
 
 Use different Signing algorithms  
@@ -181,7 +185,7 @@ Use a console app to create a new private key and Copy the file over to your ASP
 using var ECDsa = new ECDsaHelper();
 var myKeyECDsaKey = ECDsa.CreateECDsaSecurityKey(ECDsaCurve.P521);
 var keyString = ECDsaHelper.ECDsaSecurityKeyToPrivateKeyString(myKeyECDsaKey);
-File.WriteAllText("ECDsaKeyPriv.txt", keyString);
+File.WriteAllText("ECDsaPrivateKey.txt", keyString);
 ```
 Then convert the file to a ECDsaSecurityKey
 ```csharp
@@ -195,9 +199,63 @@ var tokenValidationParameters = new TokenValidationParameters
     ValidateAudience = true,
     ValidAudience = Configuration["JwtSettings:Audience"],
     ValidateIssuerSigningKey = true,
-    IssuerSigningKey = ECDsa.PrivateKeyStringToECDsaSecurityKey(File.ReadAllText("ECDsaKeyPriv.txt")),
+    IssuerSigningKey = ECDsa.PrivateKeyStringToECDsaSecurityKey(File.ReadAllText("ECDsaPrivateKey.txt")),
     ValidateLifetime = true,
     SaveSigninToken = true,
+};
+```
+
+The same can be done for RSA also
+```csharp
+using var RSA = new RsaHelper();
+var myRSAKey = RSA.CreateRSASecurityKey();
+var keyString = RsaHelper.RsaSecurityKeyToPrivateKeyString(myRSAKey);
+File.WriteAllText("RsaPrivateKey.txt", keyString);
+```
+Then convert the file to a RSASecurityKey
+```csharp
+//If you dispose RSAHelper, all key material will be disposed. All generated SecurityKeys will also not work anymore.
+//Only dispose if you don't need the generated keys anymore.
+var RSA = new RsaHelper();
+var tokenValidationParameters = new TokenValidationParameters
+{
+    ValidateIssuer = true,
+    ValidIssuer = Configuration["JwtSettings:Issuer"], //Get settings from appsettings.json
+    ValidateAudience = true,
+    ValidAudience = Configuration["JwtSettings:Audience"],
+    ValidateIssuerSigningKey = true,
+    IssuerSigningKey = RSA.PrivateKeyStringToRsaSecurityKey(File.ReadAllText("RsaPrivateKey.txt")),
+    ValidateLifetime = true,
+    SaveSigninToken = true,
+};
+```
+
+If you need to load a private key from a pem encoded file, you would do something like this
+```csharp
+var pem = File.ReadAllText("PrivateKey.pem");
+var rsa = RSA.Create();
+rsa.ImportFromPem(pem.ToCharArray());
+var securityKey = new RsaSecurityKey(rsa);
+
+//JWT TokenValidationParameters
+var tokenValidationParameters = new TokenValidationParameters
+{
+    ValidateIssuer = true,
+    ValidIssuer = Configuration["JwtSettings:Issuer"], //Get settings from appsettings.json
+    ValidateAudience = true,
+    ValidAudience = Configuration["JwtSettings:Audience"],
+    ValidateIssuerSigningKey = true,
+    IssuerSigningKey = securityKey, // <-- security key from pem encoded file
+    ValidateLifetime = true,
+    SaveSigninToken = true,
+};
+//JWT Settings
+var settings = new JwtTokenSettings
+{
+    SecurityAlgorithm = SecurityAlgorithm.RS256,
+    AccessTokenExpirationInMinutes = 60,
+    RefreshTokenExpirationInHours = 2,
+    TokenValidationParameters = tokenValidationParameters,
 };
 ```
 
@@ -207,7 +265,7 @@ Add Services with dependency injection
 Add UseAuthentication to Configure/Pipeline
 ```csharp
 // This is just an example Configure/Pipeline. It doesn't need to look exactly like this. (Program.cs)
-using Ng.Services;
+using Ng.JwtTokenService;
 ...
 var builder = WebApplication.CreateBuilder(args);
 
@@ -252,8 +310,6 @@ app.Run();
 
 Create an Auth controller with Login/Refresh endpoints
 ```csharp
-using Ng.Services;
-...
 [Route("api/[controller]/[action]")]
 public class AuthController : ControllerBase
 {
@@ -275,7 +331,7 @@ public class AuthController : ControllerBase
             PasswordHash = "..."
         };
         //validate password. Do not continue if password is not valid
-
+        //...
         //get roles for the user from data store
         var roles = new string[] { "Admin", "SuperUser" };
         //create claims
@@ -284,7 +340,7 @@ public class AuthController : ControllerBase
         var accessToken = jwtTokenService.GenerateAccessToken(user.UserName, roles, claims);
         var refreshToken = jwtTokenService.GenerateRefreshToken();
         //store refresh token in database
-        ...
+        //...
         return Ok(new JwtToken { AccessToken = accessToken, RefreshToken = refreshToken, TokenType = "bearer" });
     }
 
@@ -313,8 +369,6 @@ public class AuthController : ControllerBase
 
 Protect an controller or action
 ```csharp
-using Ng.Services;
-...
 [Authorize]
 [Route("members")]
 public class MembersController : ControllerBase
