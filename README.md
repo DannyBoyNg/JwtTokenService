@@ -19,11 +19,13 @@ Install-Package Ng.JwtTokenService
 
 Claims are key-value pairs that store information about a user (like userId, name, email, role). ClaimsIdentity is a collection of claims. A claimsPrincipal may contains one or more claimsIdentities.
 
-## Usage
+## Upgrading 
 
 Breaking change: from version 9.0, this package uses the more modern Microsoft.IdentityModel.JsonWebTokens instead of System.IdentityModel.Tokens.Jwt. Because of this change certain functions will not work anymore. The compiler will generate an obsolete error for certain functions. To solve these errors use GenerateAccessTokenFromOldAccessTokenAsync instead of GenerateAccessTokenFromOldAccessToken, GetClaimsFromAccessTokenAsync instead of GetClaimsFromAccessToken and GetClaimsFromExpiredAccessTokenAsync instead of GetClaimsFromExpiredAccessToken.
 
 Breaking change: from version 7.0, IRefreshTokenRepo has been removed in favor of a more simplified api. Storing and retrieving refresh tokens are not handled by this package anymore. Use the new function IsRefreshTokenExpired to determine if the refresh token is expired. This does not validate a refresh token. You must validate the refresh token yourself by storing the refresh token in a database and by checking if a refresh token belongs to a certain user.
+
+## Usage
 
 Console application
 
@@ -268,6 +270,7 @@ Add UseAuthentication to Configure/Pipeline
 using Ng.JwtTokenService;
 ...
 var builder = WebApplication.CreateBuilder(args);
+var Configuration = builder.Configuration;
 
 var tokenValidationParameters = new TokenValidationParameters
 {
@@ -324,20 +327,15 @@ public class AuthController : ControllerBase
     public ActionResult Token(string username, string password)
     {
         //get user from data store
-        var user = new User
-        {
-            Id = 1,
-            UserName = "MyUser",
-            PasswordHash = "..."
-        };
+        //...
         //validate password. Do not continue if password is not valid
         //...
         //get roles for the user from data store
         var roles = new string[] { "Admin", "SuperUser" };
         //create claims
-        var claims = new List<Claim> { new Claim("userId", user.Id.ToString()) };
+        var claims = new List<Claim> { new Claim("userId", "1") };
         //create tokens
-        var accessToken = jwtTokenService.GenerateAccessToken(user.UserName, roles, claims);
+        var accessToken = jwtTokenService.GenerateAccessToken(username, roles, claims);
         var refreshToken = jwtTokenService.GenerateRefreshToken();
         //store refresh token in database
         //...
@@ -345,20 +343,20 @@ public class AuthController : ControllerBase
     }
 
     //An example refresh endpoint
-    public ActionResult Refresh(string accessToken, string refreshToken)
+    public async Task<ActionResult> Refresh(string accessToken, string refreshToken)
     {
         //get userId from access token
-        var claimsPrincipal = jwtTokenService.GetClaimsFromExpiredAccessToken(accessToken);
-        var userIdFromToken = jwtTokenService.GetClaim(claimsPrincipal, "userId");
-        if (!int.TryParse(userIdFromToken, out int userId)) return Unauthorized("Invalid access token");
+        var claimsPrincipal = await jwtTokenService.GetClaimsFromExpiredAccessTokenAsync(accessToken);
+        var userIdClaimFromToken = jwtTokenService.GetClaim(claimsPrincipal, "userId");
+        if (!int.TryParse(userIdClaimFromToken, out int userId)) return Unauthorized("Invalid access token");
 
         //Determine if refresh token belongs to user
         //...
 
         //Check if refresh token is expired
-        if(jwtTokenService.IsRefreshTokenExpired(refreshToken)) return Unauthorized("Expired refresh token");
+        if (jwtTokenService.IsRefreshTokenExpired(refreshToken)) return Unauthorized("Expired refresh token");
         //create new tokens
-        var newAccessToken = jwtTokenService.GenerateAccessTokenFromOldAccessToken(accessToken);
+        var newAccessToken = await jwtTokenService.GenerateAccessTokenFromOldAccessTokenAsync(accessToken);
         var newRefreshToken = jwtTokenService.GenerateRefreshToken();
         //store new refresh token in database and remove old token. 
         //...
